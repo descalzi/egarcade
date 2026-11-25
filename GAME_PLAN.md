@@ -77,7 +77,7 @@ Open [the Benchy Cafe prototype](prototype/index.html) in a browser after downlo
 
 The prototype uses plain Canvas 2D and keyboard and touch inputs. Movement is on the pavement plane, with jump height tracked separately. The first encounter and controls can be tested offline. The engine choice for the full episode remains open.
 
-The [external assets](ExternalAssets/) include short hit flashes, defeat bursts, explosion variations and UI elements. The hit sheet is a useful timing reference for attacks, and the smaller bursts are candidates for breakables. Check source and usage terms before including third-party artwork in a release.
+The [external assets](ExternalAssets/) include short hit flashes, defeat bursts, explosion variations and UI elements. The hit sheet is a useful timing reference for attacks, and the smaller bursts are candidates for breakables. The supplied [licence notice](ExternalAssets/public-license.pdf) from Luis Zuno (Ansimuz) dedicates the covered package assets under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/), which permits use, modification and redistribution without required attribution.
 
 ## Build order
 
