@@ -58,6 +58,7 @@ Use the rich HD pixel-art look of the concepts, with crisp silhouettes, blue win
 | Heath Botanicals | **Heath & Bloom** | Plants in the window and a planter that could double as a pickup ledge. Confirm its route position from new references. |
 | Flint Owl Bakery | **Flint & Feather Bakery** | Owl motif and a natural place for a mince-pie pickup and the gingerbread encounter. Confirm its route position from new references. |
 | The Dorset Arms | **The Dorset Oak** | Long pale frontage, four dormers, left carriage passage and the photo's low entrance canopy. |
+| Emma Louise | **Emma & Lou Interiors** | Lifestyle and interiors shop. Keep the narrow white gable with black trim, small window high in the gable, projecting black bay and recessed entrance between display windows. The red pillar box and pavement steps help place it on the street. |
 | Tree Frog | **The Treetop Frog** | Three arched display panes, scalloped awning, recessed side entrance, brick steps and column. |
 | Tudor stretch near 61 High Street | **Tudor High Street** | Broad tiled roof, irregular beams, projecting windows and recessed wooden gateway. |
 | The Menders | **The Sole Menders** | Shoe-repair shop beside the Tudor row. Keep the black fascia with gold lettering, the broad repair-shop window, the diamond-leaded upper windows and the two low dormers in the slate roof. |
