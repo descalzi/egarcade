@@ -31,7 +31,7 @@ spacing:
 
 ## Overview
 
-Experience mode, using the media-first composition of Gallery in [the design library](https://github.com/descalzi/uiux#108-gallery). The homepage opens on full-width illustrated key art for the featured game and a single primary Play Now action. Gameplay imagery appears at a smaller scale alongside the feature copy. Its games list can grow as episodes ship. The play page is an Experience surface where the illustrated street gives way to live play.
+Experience mode, using the media-first composition of Gallery in [the design library](https://github.com/descalzi/uiux#108-gallery). The homepage opens on full-width illustrated key art for the featured game and a single primary Play Now action. Gameplay imagery appears at a smaller scale alongside the feature copy. Its games list can grow as episodes ship. Game pages are Experience surfaces. Each opens on its own illustrated poster with a large arcade Play button, then shows the available characters standing in their idle poses. Choosing a character starts play.
 
 ## Colors
 
@@ -43,7 +43,7 @@ The episode title uses a serif display treatment drawn from the shop signs. Cont
 
 ## Layout
 
-The 16:9 canvas keeps its aspect ratio. The hero and play controls sit immediately below it. On coarse pointers, play opens a landscape stage with an analogue joystick and round Jump and Attack buttons over the game. Request native fullscreen and landscape lock first. Use a viewport-filling rotated stage if the browser cannot lock orientation. Pause and Exit fullscreen remain reachable. Spacing follows a 4 px grid.
+The 16:9 canvas keeps its aspect ratio. Game controls sit immediately below the active canvas on desktop. On coarse pointers, play opens a landscape stage with an analogue joystick and round Jump and Attack buttons over the game. Request native fullscreen and landscape lock first. Use a viewport-filling rotated stage if the browser cannot lock orientation. Pause and Exit fullscreen remain reachable. Spacing follows a 4 px grid.
 
 ## Elevation & Depth
 
@@ -55,4 +55,4 @@ The canvas and frame have squared corners. Controls use a 6 px radius and a mini
 
 ## Components
 
-Native hero radios, buttons and a live status line are reachable by keyboard. Focus is visible and the game pauses when the window loses focus. Reduced motion suppresses decorative button movement and rapid sprite flicker.
+Native character and action buttons and a live status line are reachable by keyboard. Focus is visible and the game pauses when the window loses focus. Reduced motion suppresses decorative button movement and rapid sprite flicker.
