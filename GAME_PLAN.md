@@ -37,9 +37,9 @@ All enemies are fictional zombies or animated decorations and shop dummies. Beat
 - **Attack** on the ground for a short punch sequence ending in a kick. Use the same button to break crates and bins.
 - **Jump** to reach high presents. Attack once in the air for a forward kick that knocks a zombie back. Ground attacks are enough to clear every encounter.
 - Choose between a woman in a rust shearling jacket, tan boots and ponytail and a man in a teal winter jacket and red scarf. Both share identical speed, jump, attack reach, timing, health and story.
-- Start with **five hearts**. A landed hit takes one heart, followed by a brief invulnerability window. Hearts carry across stages. At zero, restart the current stage on five hearts with its entry score.
-- Wrapped presents are worth **100 points**. Place them on the pavement, on reachable ledges and in breakables. One optional gold present per stage is worth **300 points**.
-- Mince pies restore **one heart**. Place them at fixed spots and leave them available at full health. Show hearts and score in a compact HUD.
+- Start with **five health segments**. A landed hit takes one segment, followed by a brief invulnerability window. Health carries across stages. At zero, restart the current stage at full health with its entry score.
+- Wrapped presents are worth **100 points**. Place them on the pavement, on reachable ledges and in breakables. One optional gold present per stage is worth **300 points**. Presents give off a small burst of sparks and show their point value at the pickup spot.
+- Mince pies restore **one health segment**. Place them at fixed spots and leave them available at full health. The hero squats to collect a pie, then gains a brief mint glow. A copper-framed health bar and separate score counter sit at the top of the play area.
 
 ## Art and locations
 
