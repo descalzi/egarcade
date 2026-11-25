@@ -138,6 +138,8 @@ function label(g, value, x, y, size, colour) {
   g.fillText(value, x, y);
 }
 const walkCycle = [0,1,2,1];
+const pickupDuration = .28;
+const crateHeight = 25;
 
 function sprite(g,image,frame,row,cellWidth,cellHeight,x,y,width=cellWidth,height=cellHeight){
   g.drawImage(image,frame*cellWidth,row*cellHeight,cellWidth,cellHeight,
@@ -171,6 +173,16 @@ function actor(g,a){
     const row=a.look==='rust'?0:1;
     if(a.hurt>0){
       sprite(g,heroMoves,3,row,76,60,-38,-60);
+    }else if(a.pickup&&!a.swing){
+      const item=a.pickup;
+      const progress=1-item.time/pickupDuration;
+      const reach=Math.sin(Math.PI*progress);
+      g.save();
+      if(item.bend){
+        g.transform(1,0,-.19*reach,1-.27*reach,0,0);
+      }
+      sprite(g,heroPoses,item.bend?2:0,row,76,60,-38,-60);
+      g.restore();
     }else if(a.pose==='walk'){
       const frame=walkCycle[Math.floor(a.stride*11)%walkCycle.length];
       sprite(g,heroMoves,frame,row,76,60,-38,-60);
@@ -254,9 +266,9 @@ function newEncounter(look){
     hero:{look,x:62,y:224,z:0,vz:0,face:1,hearts:5,immune:0,
       swing:0,combo:0,comboTime:0,kicked:false,hurt:0,stride:0,pose:'idle'},
     enemies:[zombieAt(346,228,-1)],
-    gifts:[{x:96,y:223,height:0},{x:200,y:199,height:23,gold:true}],
-    crate:{x:141,y:237,intact:true},
-    pie:{x:275,y:207,taken:false},
+    gifts:[{x:96,y:223,height:0},{x:200,y:201,height:crateHeight,gold:true,crate:'gold'}],
+    crates:[{id:'red',x:141,y:237,intact:true},{id:'gold',x:200,y:201,intact:true}],
+    pie:{x:275,y:207,height:0,taken:false},
     effects:[],wave:1,score:0,cleared:false
   };
 }
@@ -282,7 +294,7 @@ function choose(next){
   for(const input of heroInputs)input.disabled=!!state;
   playButton.textContent=state?'Restart':'Play encounter';
   status.dataset.clear='false';
-  status.textContent=state?'Defeat the shopper zombie. Presents are optional.':'Choose Rust or Teal, then play.';
+  status.textContent=state?'Defeat the shopper zombie. Jump for the gold present or smash its crate.':'Choose Rust or Teal, then play.';
 }
 function setPaused(next){
   if(!state||paused===next)return;
@@ -348,14 +360,47 @@ saveStyle.addEventListener('click',()=>{
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 const close=(a,b,x,y)=>Math.abs(a.x-b.x)<x&&Math.abs(a.y-b.y)<y;
 
+// Crate footprints are measured at their base in the pavement plane.
+function moveHero(h,crates,dx,dy){
+  let x=clamp(h.x+dx,16,464);
+  let y=clamp(h.y+dy,189,253);
+  if(h.z<crateHeight){
+    for(const c of crates){
+      if(!c.intact)continue;
+      if(Math.abs(h.y-c.y)<10){
+        if(dx>0&&h.x<=c.x-17&&x>c.x-17)x=c.x-17;
+        if(dx<0&&h.x>=c.x+17&&x<c.x+17)x=c.x+17;
+      }
+      if(Math.abs(x-c.x)<17){
+        if(dy>0&&h.y<=c.y-10&&y>c.y-10)y=c.y-10;
+        if(dy<0&&h.y>=c.y+10&&y<c.y+10)y=c.y+10;
+      }
+    }
+  }
+  h.x=x;
+  h.y=y;
+}
+function crateFloor(h,crates){
+  return crates.some(c=>c.intact&&close(h,c,17,10))?crateHeight:0;
+}
+function takePickup(h,item,kind){
+  item.taken=true;
+  h.pickup={kind,x:item.x,y:item.y-item.height,time:pickupDuration,
+    bend:h.z===0&&!item.height};
+}
+
 function strike(s, air) {
   const h=s.hero;
   const reach=air?39:h.combo===3?36:30;
   const inArc=target=>close(h,target,reach,13)&&(target.x-h.x)*h.face>=-4;
-  if(s.crate.intact&&inArc(s.crate)&&h.z<27){
-    s.crate.intact=false;
-    effect(s,'break',s.crate.x,s.crate.y-12);
-    s.gifts.push({x:s.crate.x+10*h.face,y:s.crate.y,height:0});
+  for(const c of s.crates){
+    if(!c.intact||h.z>=crateHeight+5||!close(h,c,reach,15)||
+      (Math.abs(c.x-h.x)>8&&(c.x-h.x)*h.face<0))continue;
+    c.intact=false;
+    effect(s,'break',c.x,c.y-12);
+    const supported=s.gifts.find(item=>item.crate===c.id);
+    if(supported)supported.height=0;
+    else s.gifts.push({x:c.x+10*h.face,y:c.y,height:0});
   }
   for(const zombie of s.enemies){
     if(zombie.hp<=0||!inArc(zombie)||h.z>43)continue;
@@ -380,27 +425,31 @@ function update(dt) {
   s.effects=s.effects.filter(spark=>spark.age<spark.duration);
   h.immune=Math.max(0,h.immune-dt);
   h.hurt=Math.max(0,h.hurt-dt);
+  if(h.pickup&&(h.pickup.time-=dt)<=0)h.pickup=null;
   h.swing=Math.max(0,h.swing-dt);
   h.comboTime=Math.max(0,h.comboTime-dt);
   const dx=h.hurt?0:Number(down('right'))-Number(down('left'));
   const dy=h.hurt?0:Number(down('down'))-Number(down('up'));
   if(dx)h.face=Math.sign(dx);
   const diagonal=dx&&dy?Math.SQRT1_2:1;
-  h.x=clamp(h.x+dx*105*dt*diagonal,16,464);
-  h.y=clamp(h.y+dy*69*dt*diagonal,189,253);
-  h.pose=dx||dy?'walk':'idle';
-  h.stride=dx||dy?h.stride+dt:0;
-  if(pressed.has('jump')&&h.z===0&&!h.hurt){
+  const previousX=h.x;
+  const previousY=h.y;
+  moveHero(h,s.crates,dx*105*dt*diagonal,dy*69*dt*diagonal);
+  const moving=h.x!==previousX||h.y!==previousY;
+  h.pose=moving?'walk':'idle';
+  h.stride=moving?h.stride+dt:0;
+
+  const floor=h.z>=crateHeight?crateFloor(h,s.crates):0;
+  if(pressed.has('jump')&&h.z===floor&&h.vz===0&&!h.hurt){
     h.vz=185;
     h.kicked=false;
   }
-  if(h.vz||h.z){
-    const previous=h.z;
-    h.z=Math.max(0,h.z+h.vz*dt-270*dt*dt);
-    h.vz=h.z?h.vz-540*dt:0;
-    if(previous>0&&h.z===0)h.kicked=false;
+  if(h.vz||h.z>floor){
+    h.z=Math.max(floor,h.z+h.vz*dt-270*dt*dt);
+    h.vz=h.z>floor?h.vz-540*dt:0;
+    if(h.z===floor)h.kicked=false;
   }
-  const air=h.z>0;
+  const air=h.z>floor;
   if(pressed.has('attack')&&h.swing<=0&&!h.hurt&&(!air||!h.kicked)){
     h.combo=air?0:h.comboTime>0?h.combo%3+1:1;
     h.comboTime=air?0:.55;
@@ -433,7 +482,7 @@ function update(dt) {
         h.hurt=.24;
         h.swing=0;
         h.comboTime=0;
-        h.x=clamp(h.x+z.face*8,16,464);
+        moveHero(h,s.crates,z.face*8,0);
         if(h.hearts===0){
           choose(mode);
           status.textContent='Back at Benchy Cafe with five hearts. Step aside during the grab wind-up.';
@@ -457,13 +506,13 @@ function update(dt) {
   }
   for(const item of s.gifts){
     if(!item.taken&&close(h,item,12,9)&&h.z>=item.height&&h.z<item.height+15){
-      item.taken=true;
+      takePickup(h,item,item.gold?'gold':'gift');
       s.score+=item.gold?300:100;
     }
   }
   if(!s.pie.taken&&h.hearts<5&&h.z<10&&close(h,s.pie,12,9)){
     h.hearts++;
-    s.pie.taken=true;
+    takePickup(h,s.pie,'pie');
   }
   if(!s.cleared&&s.enemies.every(z=>z.hp<=0&&!z.fall)){
     if(s.wave===1){
@@ -480,8 +529,7 @@ function update(dt) {
 }
 function scene(g){
   g.drawImage(background,0,0,480,270);
-  // The tall display crate visually supports the raised pickup.
-  sprite(g,props,0,0,32,32,184,169);
+
 }
 function hud(g, hearts, score){
   box(g,6,5,109,17,'#24263a');
@@ -496,15 +544,35 @@ function drawStyle(g){
 }
 function drawEncounter(g,s){
   scene(g);
-  if(s.crate.intact)crate(g,s.crate.x,s.crate.y);
-  if(!s.pie.taken)pie(g,s.pie.x,s.pie.y);
-  for(const item of s.gifts)
-    if(!item.taken)gift(g,item.x,item.y-item.height,item.gold);
-  for(const a of [s.hero,...s.enemies].sort((a,b)=>a.y-b.y)){
+  const draws=[];
+  for(const c of s.crates){
+    if(c.intact)draws.push({y:c.y,draw:()=>crate(g,c.x,c.y)});
+  }
+  if(!s.pie.taken)draws.push({y:s.pie.y,draw:()=>pie(g,s.pie.x,s.pie.y)});
+  for(const item of s.gifts){
+    if(!item.taken)draws.push({y:item.y,draw:()=>gift(g,item.x,item.y-item.height,item.gold)});
+  }
+  for(const a of [s.hero,...s.enemies]){
     if(a.hp<=0&&!a.fall)continue;
     if(!reducedMotion.matches&&a.immune&&!a.hurt&&Math.floor(clock*4)%2)continue;
-    actor(g,a);
-    if(a.tell)label(g,'!',a.x-2,a.y-64,12,'#ffcf76');
+    draws.push({y:a.y,draw:()=>{
+      actor(g,a);
+      if(a.tell)label(g,'!',a.x-2,a.y-64,12,'#ffcf76');
+    }});
+  }
+  for(const entry of draws.sort((a,b)=>a.y-b.y))entry.draw();
+  const h=s.hero;
+  if(h.pickup){
+    const item=h.pickup;
+    const progress=1-item.time/pickupDuration;
+    const targetX=h.x+12*h.face;
+    const targetY=h.y-h.z-34;
+    const tile=item.kind==='pie'?3:item.kind==='gold'?2:1;
+    g.save();
+    g.globalAlpha=Math.min(1,4*(1-progress));
+    sprite(g,props,tile,0,32,32,item.x+(targetX-item.x)*progress-16,
+      item.y+(targetY-item.y)*progress-32);
+    g.restore();
   }
   for(const spark of s.effects){
     const burst=spark.kind==='break';
