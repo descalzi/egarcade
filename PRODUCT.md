@@ -10,7 +10,7 @@ Local players and arcade fans can try a short encounter on a laptop or a touch s
 
 | Surface | Mode | Primary action |
 | --- | --- | --- |
-| `prototype/index.html` | Experience | Choose a hero and play the Benchy Cafe encounter |
+| `docs/index.html` | Experience | Choose a hero and play the Benchy Cafe encounter |
 
 ## Scope and assets
 
