@@ -31,7 +31,7 @@ spacing:
 
 ## Overview
 
-Experience mode, using the media-first composition of Gallery in [the design library](https://github.com/descalzi/uiux#108-gallery). The homepage opens on full-width illustrated key art for the featured game and a single primary Play Now action. Gameplay imagery appears at a smaller scale alongside the feature copy. Its games list can grow as episodes ship. Game pages are Experience surfaces. Each opens on its own illustrated poster with a large arcade Play button, then shows the available characters standing in their idle poses. Choosing a character starts play.
+Experience mode, using the media-first composition of Gallery in [the design library](https://github.com/descalzi/uiux#108-gallery). The homepage opens on full-width illustrated key art for the featured game and a single primary Play Now action. Gameplay imagery appears at a smaller scale alongside the feature copy. Its games list can grow as episodes ship. Game pages are Experience surfaces. Each opens on its own illustrated poster with a large arcade Play button, then shows the available characters in dedicated standing portraits. The Play button, labels and portrait frames use the game's pixel lettering, copper trim and stepped edges. Choosing a character starts play.
 
 ## Colors
 
