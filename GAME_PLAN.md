@@ -63,6 +63,8 @@ Use the rich HD pixel-art look of the concepts, with crisp silhouettes, blue win
 | Tudor stretch near 61 High Street | **Tudor High Street** | Broad tiled roof, irregular beams, projecting windows and recessed wooden gateway. |
 | The Menders | **The Sole Menders** | Shoe-repair shop beside the Tudor row. Keep the black fascia with gold lettering, the broad repair-shop window, the diamond-leaded upper windows and the two low dormers in the slate roof. |
 | Brick frontage near 64 High Street | | Red brick, three gabled dormers, white sash windows and a central black door above stone steps. Keep it between the timbered row and the Dorset Oak's carriage passage. |
+| East Grinstead war memorial | **War Memorial** | Cross-topped stone column on a stepped base with dark plaques and iron railings. Keep the flagpoles, curved flower beds and brick approach, with the sports shop behind and to the left. |
+| Herbert Sports | **Herbie’s Sports** | Black-and-white timbered upper floor under a long tiled roof with small dormers, pale shop signs above wide display windows and a covered passage to the right. |
 | Sackville College | **Sackville College** | Long stone frontage set back behind a lawn and low hedge, with tall chimneys, a central arched entrance, a path across the lawn and benches beside the pavement. |
 
 For the street expansion, use the 61 and 64 High Street views together to match the roofline and the transition from timber to brick and then to the pale pub frontage. Treat the latest view of 61 as a second angle on the existing Tudor segment. Use Sackville College as the point where the street opens up, with a wider view across the garden and a bare tree framing the scene.
