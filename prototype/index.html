@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grinstead Arcade • Benchy Cafe</title>
+<style>
+:root{color-scheme:dark;font:16px system-ui;background:#101629;color:#fff0d8}
+body{margin:0 auto;max-width:960px;padding:18px}
+header,nav,#touch{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+h1{font-size:clamp(1.4rem,4vw,2.2rem);margin:0}header{justify-content:space-between;margin-bottom:12px}
+canvas{display:block;width:100%;height:auto;image-rendering:pixelated;border:1px solid #554760;box-sizing:border-box;background:#202b4d}
+button{font:inherit;font-weight:700;color:inherit;background:#283653;border:1px solid #667495;padding:.55rem .8rem;border-radius:4px;cursor:pointer}
+button[aria-pressed=true]{background:#784638;border-color:#f4bc71}button:focus-visible{outline:2px solid #ffd282}
+nav{margin:12px 0}p{margin:.5rem 0;color:#dbd0ca}#touch{display:none;touch-action:none}
+@media(pointer:coarse){#touch{display:flex}#touch button{min-width:46px;min-height:44px;padding:.4rem}}
+</style>
+<header><h1>Grinstead Arcade</h1><span>The Big Reveal · Benchy Cafe</span></header>
+<canvas id="screen" width="480" height="270" role="img" aria-label="Pixel-art High Street and prototype playfield"></canvas>
+<nav aria-label="Game modes">
+<button id="style" aria-pressed="true">Style frame</button>
+<button id="rust" aria-pressed="false">Play as Rust</button>
+<button id="teal" aria-pressed="false">Play as Teal</button>
+<button id="save">Save style frame</button>
+</nav>
+<p id="status" role="status">Style frame · 480 × 270</p>
+<p>Move with arrows or WASD. Jump with Space. Attack with J or X. Tap again for a combo. Attack in the air to jump-kick. R restarts.</p>
+<div id="touch" aria-label="Touch controls">
+<button data-key="ArrowLeft" aria-label="Left">←</button><button data-key="ArrowUp" aria-label="Up">↑</button><button data-key="ArrowDown" aria-label="Down">↓</button><button data-key="ArrowRight" aria-label="Right">→</button><button data-key="Space">Jump</button><button data-key="KeyJ">Attack</button>
+</div>
+<script>
+const screen = document.querySelector('#screen');
+const ctx = screen.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+function box(g, x, y, w, h, colour) {
+  g.fillStyle = colour;
+  g.fillRect(Math.round(x), Math.round(y), w, h);
+}
+function shape(g, points, colour) {
+  g.fillStyle = colour;
+  g.beginPath();
+  points.forEach(([x, y], index) => index ? g.lineTo(x, y) : g.moveTo(x, y));
+  g.closePath();
+  g.fill();
+}
+function label(g, value, x, y, size, colour) {
+  g.fillStyle = colour;
+  g.font = 'bold ' + size + 'px monospace';
+  g.fillText(value, x, y);
+}
+const background = document.createElement('canvas');
+background.width = 480;
+background.height = 270;
+function streetscape(g) {
+  const rect = (x,y,w,h,c) => box(g,x,y,w,h,c);
+  rect(0,0,480,270,'#253357');
+  rect(0,43,480,142,'#2d4067');
+  const roof = (x,w,top,base) => {
+    shape(g,[[x,base],[x+13,top],[x+w-11,top],[x+w,base]],'#583941');
+    for(let y=top+3;y<base;y+=4){
+      const inset = Math.ceil((base-y)/(base-top)*13);
+      rect(x+inset,y,w-2*inset,1,'#372c3b');
+      for(let col=x+inset+2;col<x+w-inset-4;col+=8)
+        rect(col+(y%3),y+1,4,1,(col+y)%5?'#774941':'#925747');
+    }
+  };
+  function panes(x,y,w,h,shop=false) {
+    rect(x-2,y-2,w+4,h+4,'#382832');
+    rect(x,y,w,h,shop?'#684337':'#b1744a');
+    rect(x+2,y+2,w-4,4,'#eab469');
+    for(let xx=x+6;xx<x+w;xx+=8) rect(xx,y,1,h,'#342b35');
+    for(let yy=y+8;yy<y+h;yy+=7) rect(x,yy,w,1,'#342b35');
+  }
+  const facade = (x,w,start)=> {
+    rect(x,start,w,180-start,'#39303b');
+    rect(x+3,start,w-6,112-start,'#b5a294');
+    for(let xx=x+5;xx<x+w-2;xx+=12) rect(xx,start,3,113-start,'#40313a');
+    rect(x,start,w,3,'#3f2b34');
+  };
+  facade(0,99,65); roof(-12,115,40,68);
+  facade(97,174,62); roof(91,185,34,66);
+  facade(268,212,86); roof(266,222,45,87);
+  rect(143,21,11,20,'#825343');
+  rect(141,20,15,3,'#a26655');
+  shape(g,[[153,64],[153,45],[175,25],[198,45],[198,64]],'#e2d1b5');
+  shape(g,[[149,45],[175,22],[202,45],[195,45],[175,28],[155,45]],'#49303a');
+  panes(164,44,22,17);
+  shape(g,[[99,106],[103,100],[139,62],[145,62],[109,106]],'#433039');
+  shape(g,[[102,68],[108,67],[144,107],[139,108]],'#433039');
+  rect(156,69,65,37,'#4c3539');
+  panes(160,73,57,28);
+  panes(18,75,51,29);
+  panes(288,92,26,15);
+  panes(344,92,29,15);
+  panes(425,92,27,15);
+  rect(0,109,480,16,'#302633');
+  rect(103,112,160,12,'#ded0ad');
+  rect(275,112,201,12,'#463237');
+  label(g,'FARTHING & CO.',5,120,8,'#ebcea3');
+  label(g,'BENCHY CAFE',148,121,10,'#4d302d');
+  label(g,'THE BOOK NOOK',334,121,9,'#eed0a0');
+  panes(5,131,87,37,true); panes(106,131,50,38,true);
+  panes(203,131,55,38,true); panes(274,131,84,37,true); panes(393,131,83,37,true);
+  for(const [x,w] of [[161,37],[364,24]]) {
+    rect(x,127,w,52,'#251e2b'); panes(x+4,134,w-8,28);
+    rect(x+w-7,164,2,3,'#e8b877');
+  }
+  for(const start of [278,396]) for(let i=0;i<17;i++){
+    const colour=['#c68c50','#94665b','#6c7963','#c9a073'][i%4];
+    rect(start+i*4,158-i%3,3,8+i%3,colour);
+  }
+  rect(0,176,480,6,'#ad7f69');
+  rect(0,182,480,79,'#77606a');
+  for(let y=185;y<258;y+=7){
+    rect(0,y,480,1,'#5e515e');
+    for(let x=y%2?10:0;x<480;x+=17){
+      rect(x,y,1,6,'#64525d');
+      if((x+y)%5===0)rect(x+2,y+2,11,2,'#886973');
+    }
+  }
+  rect(0,257,480,3,'#aa8c7f'); rect(0,260,480,10,'#373549');
+  for(const x of [118,233]){
+    rect(x,155,10,13,'#733937');rect(x+1,156,8,9,'#b45d48');
+    rect(x,169,12,3,'#c07852');rect(x+1,172,2,8,'#4f363e');rect(x+9,172,2,8,'#4f363e');
+  }
+  for(let x=5;x<480;x+=12)rect(x,108+(Math.floor(x/12)%4),2,2,x%5?'#f9c273':'#e68564');
+}
+streetscape(background.getContext('2d'));
+
+const wardrobe = {
+  rust:{coat:'#ae5843',light:'#dd8a5a',trim:'#f0c798',hair:'#473038',shoe:'#976645'},
+  teal:{coat:'#356c70',light:'#559a92',trim:'#bb554b',hair:'#4f353a',shoe:'#393140'},
+  zombie:{coat:'#695369',light:'#907085',trim:'#b29257',hair:'#4c4b3d',shoe:'#482f3e'}
+};
+function actor(g, a, pose='idle', tick=0) {
+  const {coat,light,trim,hair,shoe} = wardrobe[a.look];
+  const zombie = a.look==='zombie';
+  const skin = zombie?'#a5b583':'#e4af82';
+  const ink = '#292536';
+  const y = a.y-(a.z||0);
+  box(g,a.x-13,a.y-2,26,4,'#4e414e');
+  g.save();
+  g.translate(Math.round(a.x),Math.round(y));
+  g.scale(a.face,1);
+  const rect=(x,y,w,h,c)=>box(g,x,y,w,h,c);
+  const stride = pose==='walk' ? (Math.floor(tick*9)%2?4:-4) : 0;
+  const kick=pose==='kick';
+  rect(-10-stride,-23,9,20,ink);rect(-8-stride,-21,6,17,'#544c63');
+  rect(3+stride,-23,kick?22:8,kick?7:20,ink);
+  rect(4+stride,-21,kick?19:6,kick?4:17,'#756982');
+  rect(-11-stride,-5,13,5,shoe);
+  rect(kick?22:2+stride,kick?-24:-5,kick?7:13,kick?9:5,shoe);
+  rect(-13,-44,26,24,ink);rect(-11,-42,22,20,coat);
+  rect(-10,-41,19,4,trim);rect(-9,-35,4,11,light);
+  rect(-8,-57,18,16,ink);rect(-6,-55,15,12,skin);
+  rect(-9,-59,18,5,hair);rect(-9,-55,6,7,hair);
+  if(a.look==='rust')rect(-14,-55,7,13,hair);
+  if(zombie)rect(-5,-59,12,4,trim);
+  rect(4,-52,2,2,ink);rect(7,-47,3,1,ink);
+  const reach=pose==='punch'?17:zombie?11:1;
+  rect(6,-37,8+reach,9,ink);rect(7,-36,7+reach,7,light);
+  rect(9+reach,-35,6,5,skin);
+  g.restore();
+}
+function gift(g,x,y, gold=false) {
+  box(g,x-6,y-10,12,10,gold?'#d69440':'#aa4e56');
+  box(g,x-7,y-11,14,3,gold?'#e9b65c':'#d66b6a');
+  box(g,x-1,y-12,2,12,'#ffe6a1'); box(g,x-4,y-14,8,2,'#f6be70');
+}
+function pie(g,x,y) {
+  box(g,x-6,y-4,12,4,'#9b573c');box(g,x-5,y-7,10,4,'#edb46c');
+  box(g,x-1,y-8,2,4,'#fff0ba');
+}
+function crate(g,x,y) {
+  box(g,x-11,y-22,22,22,'#48343b');box(g,x-9,y-20,18,18,'#a46e48');
+  box(g,x-7,y-17,14,2,'#d09860');box(g,x-7,y-8,14,2,'#694836');
+  shape(g,[[x-8,y-3],[x-8,y-6],[x+8,y-19],[x+8,y-15]],'#e1a56a');
+}
+const controls = new Map([
+  ['ArrowLeft','left'],['KeyA','left'],['ArrowRight','right'],['KeyD','right'],
+  ['ArrowUp','up'],['KeyW','up'],['ArrowDown','down'],['KeyS','down'],
+  ['Space','jump'],['KeyJ','attack'],['KeyX','attack'],['KeyR','restart']
+]);
+const held = new Set();
+const pressed = new Set();
+let mode = 'style';
+let state;
+let clock = 0;
+let lastFrame;
+const status = document.querySelector('#status');
+
+function newEncounter(look) {
+  return {
+    hero:{look,x:62,y:224,z:0,vz:0,face:1,hearts:5,immune:0,
+      swing:0,combo:0,comboTime:0,kicked:false,pose:'idle'},
+    enemies:[{look:'zombie',x:346,y:228,face:-1,hp:4,wake:0,stun:0,tell:0,recover:0,fall:0}],
+    gifts:[{x:96,y:223,height:0},{x:200,y:199,height:23,gold:true}],
+    crate:{x:141,y:237,intact:true},
+    pie:{x:275,y:207,taken:false},
+    score:0,
+    cleared:false
+  };
+}
+function choose(next) {
+  held.clear();
+  pressed.clear();
+  mode=next;
+  state=next==='style'?null:newEncounter(next);
+  for(const id of ['style','rust','teal'])
+    document.querySelector('#'+id).setAttribute('aria-pressed',String(next===id));
+  status.textContent=state?'Defeat the shopper zombie. Presents are optional.':'Style frame · 480 × 270';
+}
+function press(code) {
+  const action=controls.get(code);
+  if(!held.has(code))pressed.add(action);
+  held.add(code);
+}
+function down(action) {
+  return [...held].some(code=>controls.get(code)===action);
+}
+window.addEventListener('keydown',event=>{
+  if(!controls.has(event.code)||event.altKey||event.ctrlKey||event.metaKey)return;
+  if(event.code==='Space'&&event.target instanceof HTMLButtonElement)return;
+  event.preventDefault();
+  press(event.code);
+});
+window.addEventListener('keyup',event=>held.delete(event.code));
+window.addEventListener('blur',()=>{held.clear();pressed.clear();});
+for(const button of document.querySelectorAll('[data-key]')){
+  button.addEventListener('pointerdown',event=>{
+    event.preventDefault();
+    button.setPointerCapture(event.pointerId);
+    press(button.dataset.key);
+  });
+  for(const type of ['pointerup','pointercancel','lostpointercapture'])
+    button.addEventListener(type,()=>held.delete(button.dataset.key));
+}
+for(const id of ['style','rust','teal'])
+  document.querySelector('#'+id).addEventListener('click',()=>{
+    choose(id);
+    document.activeElement?.blur();
+  });
+document.querySelector('#save').addEventListener('click',()=>{
+  const frame=document.createElement('canvas');
+  frame.width=480;
+  frame.height=270;
+  drawStyle(frame.getContext('2d'));
+  const link=document.createElement('a');
+  link.href=frame.toDataURL('image/png');
+  link.download='benchy-cafe-style-frame.png';
+  link.click();
+});
+
+const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+const close=(a,b,x,y)=>Math.abs(a.x-b.x)<x&&Math.abs(a.y-b.y)<y;
+function strike(s, air) {
+  const h=s.hero;
+  const reach=air?39:h.combo===3?36:30;
+  const inArc=target=>close(h,target,reach,13)&&(target.x-h.x)*h.face>=-4;
+  if(s.crate.intact&&inArc(s.crate)&&h.z<27){
+    s.crate.intact=false;
+    s.gifts.push({x:s.crate.x+10*h.face,y:s.crate.y,height:0});
+  }
+  for(const zombie of s.enemies){
+    if(zombie.hp<=0||!inArc(zombie)||h.z>43)continue;
+    zombie.hp-=air||h.combo===3?2:1;
+    zombie.stun=.24;
+    zombie.tell=0;
+    zombie.x=clamp(zombie.x+(air?17:7)*h.face,18,462);
+    if(zombie.hp<=0)zombie.fall=.48;
+  }
+}
+function update(dt) {
+  if(!state)return;
+  if(pressed.has('restart')){
+    choose(mode);
+    return;
+  }
+  const s=state;
+  const h=s.hero;
+  h.immune=Math.max(0,h.immune-dt);
+  h.swing=Math.max(0,h.swing-dt);
+  h.comboTime=Math.max(0,h.comboTime-dt);
+  const dx=Number(down('right'))-Number(down('left'));
+  const dy=Number(down('down'))-Number(down('up'));
+  if(dx)h.face=Math.sign(dx);
+  const diagonal=dx&&dy?Math.SQRT1_2:1;
+  h.x=clamp(h.x+dx*105*dt*diagonal,16,464);
+  h.y=clamp(h.y+dy*69*dt*diagonal,189,253);
+  h.pose=dx||dy?'walk':'idle';
+  if(pressed.has('jump')&&h.z===0){
+    h.vz=185;
+    h.kicked=false;
+  }
+  if(h.vz||h.z){
+    h.z=Math.max(0,h.z+h.vz*dt);
+    h.vz=h.z?h.vz-540*dt:0;
+  }
+  const air=h.z>0;
+  if(pressed.has('attack')&&h.swing<=0&&(!air||!h.kicked)){
+    h.combo=air?0:h.comboTime>0?h.combo%3+1:1;
+    h.comboTime=air?0:.55;
+    h.swing=.17;
+    h.attackPose=air||h.combo===3?'kick':'punch';
+    h.kicked=air;
+    strike(s,air);
+  }
+  if(h.swing)h.pose=h.attackPose;
+  for(const z of s.enemies){
+    if(z.hp<=0){
+      z.fall=Math.max(0,z.fall-dt);
+      continue;
+    }
+    z.stun=Math.max(0,z.stun-dt);
+    z.recover=Math.max(0,z.recover-dt);
+    if(z.stun||z.recover||Math.abs(z.x-h.x)>165)continue;
+    z.face=z.x<h.x?1:-1;
+    if(z.tell>0){
+      z.tell-=dt;
+      if(z.tell<=0){
+        z.tell=0;
+        z.recover=.55;
+        if(close(z,h,25,10)&&h.z<13&&!h.immune){
+          h.hearts--;
+          h.immune=.85;
+          if(h.hearts===0){
+            choose(mode);
+            status.textContent='Back at Benchy Cafe with five hearts. Try stepping across the pavement when the zombie flashes.';
+            return;
+          }
+        }
+      }
+    }else if(close(z,h,22,9)){
+      z.tell=.42;
+    }else{
+      z.x+=clamp(h.x-z.x,-42*dt,42*dt);
+      z.y+=clamp(h.y-z.y,-28*dt,28*dt);
+    }
+  }
+  for(const item of s.gifts){
+    if(!item.taken&&close(h,item,12,9)&&h.z>=item.height&&h.z<item.height+15){
+      item.taken=true;
+      s.score+=item.gold?300:100;
+    }
+  }
+  if(!s.pie.taken&&h.hearts<5&&h.z<10&&close(h,s.pie,12,9)){
+    h.hearts++;
+    s.pie.taken=true;
+  }
+  if(!s.cleared&&s.enemies.every(z=>z.hp<=0)){
+    s.cleared=true;
+    status.textContent='Encounter cleared. Collect any remaining presents, or press R to replay.';
+  }
+}
+function scene(g){
+  g.drawImage(background,0,0);
+  box(g,185,181,29,5,'#aa8175');box(g,185,186,29,13,'#72515b');
+  box(g,187,188,25,1,'#936b69');
+}
+function hud(g, hearts, score){
+  box(g,6,5,109,17,'#24263a');
+  for(let i=0;i<5;i++){
+    const x=11+i*13;
+    shape(g,[[x,10],[x+3,8],[x+6,10],[x+9,8],[x+12,10],[x+12,13],[x+6,18],[x,13]],i<hearts?'#e47470':'#635262');
+  }
+  label(g,String(score).padStart(3,'0'),80,17,9,'#ffe3a8');
+}
+function drawStyle(g){
+  scene(g);
+  crate(g,142,246);gift(g,201,179,true);pie(g,272,213);
+  actor(g,{look:'rust',x:82,y:234,face:1},'punch');
+  actor(g,{look:'teal',x:253,y:249,z:20,face:1},'kick');
+  actor(g,{look:'zombie',x:344,y:220,face:-1},'walk');
+  hud(g,5,0);
+}
+function drawEncounter(g,s){
+  scene(g);
+  if(s.crate.intact)crate(g,s.crate.x,s.crate.y);
+  if(!s.pie.taken)pie(g,s.pie.x,s.pie.y);
+  for(const item of s.gifts)
+    if(!item.taken)gift(g,item.x,item.y-item.height,item.gold);
+  for(const a of [s.hero,...s.enemies].sort((a,b)=>a.y-b.y)){
+    if(a.hp===0&&!a.fall||a.hp<0&&!a.fall)continue;
+    if(a.immune&&Math.floor(clock*17)%2||a.fall&&Math.floor(clock*22)%2)continue;
+    if(a.fall){
+      box(g,a.x-19,a.y-9,38,8,'#695369');
+      box(g,a.x+13*a.face,a.y-10,8,8,'#a5b583');
+      continue;
+    }
+    actor(g,a,a.pose||(a.tell?'punch':'walk'),clock);
+    if(a.tell)label(g,'!',a.x-2,a.y-64,12,'#ffcf76');
+  }
+  hud(g,s.hero.hearts,s.score);
+}
+function frame(now){
+  const dt=lastFrame===undefined?0:Math.min(.035,(now-lastFrame)/1000);
+  lastFrame=now;
+  clock+=dt;
+  update(dt);
+  pressed.clear();
+  if(state)drawEncounter(ctx,state);
+  else drawStyle(ctx);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</html>

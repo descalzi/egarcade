@@ -71,6 +71,12 @@ The current Google Street View captures are temporary architectural references. 
 | [Tree Frog](art/references/tree-frog.webp) | [Combat at street scale](art/concepts/combat-scale.png) |
 | | [480×270 palette and scale test](art/mockups/your-concept-at-480x270.png) |
 
+## First playable build
+
+Open [the Benchy Cafe prototype](prototype/index.html) in a browser after downloading it, or serve it from any static host. The file is self-contained. [View the 480×270 style frame](art/mockups/benchy-cafe-style-frame.svg) or export a PNG using **Save style frame** in the prototype. Both use the same original shopfront designs and placeholder characters. The shopfronts are stylised from the existing references and can be refined when straight-on photos arrive.
+
+The prototype uses plain Canvas 2D and keyboard and touch inputs. Movement is on the pavement plane, with jump height tracked separately. The first encounter and controls can be tested offline. The engine choice for the full episode remains open.
+
 ## Build order
 
 1. **Benchy Cafe style frame and first playable slice.** Develop them alongside each other. The style frame shows the faithful fronts, both heroes for comparison and the wider playable pavement at 480×270. The browser slice uses placeholder sprites for both selectable heroes, depth movement, ground combo, jump kick, a shopper zombie, a breakable crate, a raised present and a mince pie. Tune hit feedback, lane dodging and pickup reach before producing full animation sets. Phaser 3 is the proposed engine for the prototype, and Tiled is a candidate if an editor helps assemble reusable shopfronts.
