@@ -149,8 +149,8 @@ const sinkDuration = .9;
 const riseDuration = .9;
 const shoveDuration = .24;
 const shoveContact = .13;
-const shoveStartRange = 34;
-const shoveReach = 39;
+const shoveStartRange = 33;
+const shoveReach = 38;
 const wakeDistance = 165;
 
 function sprite(g,image,frame,row,cellWidth,cellHeight,x,y,width=cellWidth,height=cellHeight){
@@ -478,6 +478,7 @@ function takePie(h,item){
 function strike(s, air) {
   const h=s.hero;
   const reach=air?39:h.combo===3?36:30;
+  const damage=air?3:h.combo===3?2:1;
   const inArc=target=>close(h,target,reach,13)&&(target.x-h.x)*h.face>=-4;
   for(const c of s.crates){
     if(!c.intact||h.z>=crateHeight+5||!close(h,c,reach,15)||
@@ -491,7 +492,7 @@ function strike(s, air) {
   for(const zombie of s.enemies){
     if(zombie.hp<=0||zombie.rise!==null||!inArc(zombie)||h.z>43)continue;
     effect(s,'hit',zombie.x,zombie.y-33);
-    zombie.hp-=air||h.combo===3?2:1;
+    zombie.hp-=damage;
     zombie.stun=.24;
     zombie.tell=0;
     zombie.shove=0;
