@@ -140,6 +140,7 @@ function label(g, value, x, y, size, colour) {
 const walkCycle = [0,1,2,1];
 const swingDuration = .17;
 const kickDuration = .32;
+const groundKickReach = 36;
 const kickWindup = .08;
 const kickExtension = .115;
 const landingDuration = .11;
@@ -479,19 +480,27 @@ function takePickup(h,item,kind){
   }
 }
 
-function strike(s, air) {
+function crateInKickReach(h,c,reach){
+  const offset=c.x-h.x;
+  return c.intact&&h.z<crateHeight+5&&close(h,c,reach,15)&&
+    (Math.abs(offset)<=8||offset*h.face>0);
+}
+function strike(s,attackPose) {
   const h=s.hero;
-  const reach=air?39:h.combo===3?36:30;
-  const damage=air?3:h.combo===3?2:1;
+  const air=attackPose==='airKick';
+  const punch=attackPose==='punch';
+  const reach=air?39:punch?30:groundKickReach;
+  const damage=air?3:punch?1:2;
   const inArc=target=>close(h,target,reach,13)&&(target.x-h.x)*h.face>=-4;
-  for(const c of s.crates){
-    if(!c.intact||h.z>=crateHeight+5||!close(h,c,reach,15)||
-      (Math.abs(c.x-h.x)>8&&(c.x-h.x)*h.face<0))continue;
-    c.intact=false;
-    effect(s,'break',c.x,c.y-12);
-    const supported=s.gifts.find(item=>item.crate===c.id);
-    if(supported)supported.height=0;
-    else s.gifts.push({x:c.x+10*h.face,y:c.y,height:0});
+  if(!punch){
+    for(const c of s.crates){
+      if(!crateInKickReach(h,c,reach))continue;
+      c.intact=false;
+      effect(s,'break',c.x,c.y-12);
+      const supported=s.gifts.find(item=>item.crate===c.id);
+      if(supported)supported.height=0;
+      else s.gifts.push({x:c.x+10*h.face,y:c.y,height:0});
+    }
   }
   for(const zombie of s.enemies){
     if(zombie.hp<=0||zombie.rise!==null||!inArc(zombie)||h.z>43)continue;
@@ -553,16 +562,17 @@ function update(dt) {
   h.airborne=air;
   const kickContact=kickDuration-kickWindup;
   if(h.attackPose!=='punch'&&previousSwing>kickContact&&h.swing<=kickContact){
-    strike(s,h.attackPose==='airKick');
+    strike(s,h.attackPose);
   }
   if(wantsAttack&&(!air||!h.kicked)){
-    h.combo=air?0:h.comboTime>0?h.combo%3+1:1;
-    h.comboTime=air?0:.55;
-    h.attackPose=air?'airKick':h.combo===3?'kick':'punch';
+    const crateKick=!air&&s.crates.some(c=>crateInKickReach(h,c,groundKickReach));
+    h.combo=air||crateKick?0:h.comboTime>0?h.combo%3+1:1;
+    h.comboTime=air||crateKick?0:.55;
+    h.attackPose=air?'airKick':crateKick||h.combo===3?'kick':'punch';
     const punch=h.attackPose==='punch';
     h.swing=punch?swingDuration:kickDuration;
     h.kicked=air;
-    if(punch)strike(s,false);
+    if(punch)strike(s,h.attackPose);
   }
   for(const z of s.enemies){
     if(z.hp<=0){
