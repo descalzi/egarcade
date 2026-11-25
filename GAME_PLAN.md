@@ -60,6 +60,7 @@ Use the rich HD pixel-art look of the concepts, with crisp silhouettes, blue win
 | The Dorset Arms | **The Dorset Oak** | Long pale frontage, four dormers, left carriage passage and the photo's low entrance canopy. |
 | Tree Frog | **The Treetop Frog** | Three arched display panes, scalloped awning, recessed side entrance, brick steps and column. |
 | Tudor stretch near 61 High Street | **Tudor High Street** | Broad tiled roof, irregular beams, projecting windows and recessed wooden gateway. |
+| The Menders | **The Sole Menders** | Shoe-repair shop beside the Tudor row. Keep the black fascia with gold lettering, the broad repair-shop window, the diamond-leaded upper windows and the two low dormers in the slate roof. |
 | Brick frontage near 64 High Street | | Red brick, three gabled dormers, white sash windows and a central black door above stone steps. Keep it between the timbered row and the Dorset Oak's carriage passage. |
 | Sackville College | **Sackville College** | Long stone frontage set back behind a lawn and low hedge, with tall chimneys, a central arched entrance, a path across the lawn and benches beside the pavement. |
 
