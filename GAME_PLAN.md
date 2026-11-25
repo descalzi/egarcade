@@ -73,9 +73,11 @@ The current Google Street View captures are temporary architectural references. 
 
 ## First playable build
 
-Open [the Benchy Cafe prototype](prototype/index.html) in a browser after downloading it, or serve it from any static host. The file is self-contained. [View the 480×270 style frame](art/mockups/benchy-cafe-style-frame.svg) or export a PNG using **Save style frame** in the prototype. Both use the same original shopfront designs and placeholder characters. The shopfronts are stylised from the existing references and can be refined when straight-on photos arrive.
+Open [the Benchy Cafe prototype](prototype/index.html) in a browser after downloading it, or serve it from any static host. The file is self-contained. [View the 480×270 pixel-art style frame](art/mockups/benchy-cafe-style-frame.png) or download it with **Save style frame** in the prototype. The frame follows the concept art and illustrates the target lighting, detail and pavement depth. The playable encounter uses placeholder scenery and sprites while we tune gameplay.
 
 The prototype uses plain Canvas 2D and keyboard and touch inputs. Movement is on the pavement plane, with jump height tracked separately. The first encounter and controls can be tested offline. The engine choice for the full episode remains open.
+
+The [external assets](ExternalAssets/) include short hit flashes, defeat bursts, explosion variations and UI elements. The hit sheet is a useful timing reference for attacks, and the smaller bursts are candidates for breakables. Check source and usage terms before including third-party artwork in a release.
 
 ## Build order
 
