@@ -347,6 +347,7 @@ saveStyle.addEventListener('click',()=>{
 
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 const close=(a,b,x,y)=>Math.abs(a.x-b.x)<x&&Math.abs(a.y-b.y)<y;
+
 function strike(s, air) {
   const h=s.hero;
   const reach=air?39:h.combo===3?36:30;
