@@ -12,7 +12,7 @@ On the evening of the Christmas lights and shop-window reveal, the Disco King, a
 
 | Stage | Route and encounters | Boss |
 | --- | --- | --- |
-| **1. The Blackout** | Start at Benchy Cafe, between Farthing & Co. and The Book Nook. An easy pavement present, a ledge present and a breakable crate introduce the controls. Meet one Christmas-shopping zombie, then two approaching from opposite sides. | **The Nutcracker**, a wooden window decoration. A visible wind-up precedes its straight-line charge. Step across the pavement, then counter while it recovers. |
+| **1. The Blackout** | Start at Benchy Cafe, between Farthing & Co. and The Book Nook. An easy pavement present, a ledge present and a breakable crate introduce the controls. Meet one Christmas-shopping zombie, then two approaching from opposite sides. | **The Nutcracker**, an oversized wooden window decoration. A pavement marker shows where it will land. Clear the landing spot and counter after the stomp. |
 | **2. Window Shopping** | Continue past the Tudor façades. Larger groups of the same shuffling zombies emerge from doorways and passages. The Dorset Oak's real carriage passage fits an encounter. | **The Last-Minute Shopper**, an oversized zombie with an overloaded trolley. Sidestep the rush and counter while it turns the trolley around. |
 | **3. One Last Number** | A short zombie encounter on the approach to The Treetop Frog. The crowd waits outside and the shop's three display bays stay completely covered. | **The Disco King** uses repeated dance sequences with a visible recovery pose. Beat him, fit the spare fuse and use the reveal switch. |
 
@@ -37,9 +37,9 @@ All enemies are fictional zombies or animated decorations and shop dummies. Beat
 - **Attack** on the ground for a short punch sequence ending in a kick. Use the same button to break crates and bins.
 - **Jump** to reach high presents. Attack once in the air for a forward kick that knocks a zombie back. Ground attacks are enough to clear every encounter.
 - Choose between **Lizzy**, in a rust shearling jacket and tan boots with a ponytail, and **George**, in a teal winter jacket and red scarf. Both share identical speed, jump, attack reach, timing, health and story.
-- Start with **five health segments**. A landed hit takes one segment, followed by a brief invulnerability window. Health carries across stages. At zero, restart the current stage at full health with its entry score.
+- Start with **five health segments**. A landed hit takes one segment, followed by a brief invulnerability window. Health carries across stages. At zero, Game Over offers a stage restart at full health with its entry score, or an exit to the title screen.
 - Wrapped presents are worth **100 points**. Place them on the pavement, on reachable ledges and in breakables. One optional gold present per stage is worth **300 points**. Both heroes squat for presents collected from a standing position. The present gives off sparks and shows its point value at the pickup spot.
-- Mince pies restore **one health segment**. Place them at fixed spots and leave them available at full health. The hero squats to collect a pie, then gains a brief mint glow. A copper-framed health bar and separate score counter sit at the top of the play area.
+- Mince pies restore **one health segment**. Place them at fixed spots and leave them available at full health. The hero squats to collect a pie, then gains a brief mint glow. A segmented health bar and amber pixel score sit directly over the play area.
 
 ## Art and locations
 
@@ -83,7 +83,7 @@ The current Google Street View captures are temporary architectural references. 
 
 [Play The Big Reveal](https://descalzi.github.io/egarcade/play/) or download [the self-contained game](docs/play/index.html) and open it in a browser. The playtest covers all three stages in seven connected screens, from Benchy Cafe past Emma & Lou Interiors and the memorial, through Tudor High Street and the Dorset Oak, then from Sackville College to the Treetop Frog. Clear each encounter and head right to the next screen.
 
-The Nutcracker charges down one lane, the Last-Minute Shopper tracks across the pavement before a trolley rush, and the Disco King attacks twice before his recovery. Heal with mince pies along the way. Health and score carry forward, and restarting or losing all health returns you to the current stage entry with five segments and its entry score. The last encounter ends with the fuse, the lighting switch, the countdown and the live window display. Music is generated in the browser from an original short disco sequence.
+The Nutcracker jumps to a marked landing spot, the Last-Minute Shopper tracks across the pavement before a trolley rush, and the Disco King attacks twice before his recovery. Heal with mince pies along the way. Health and score carry forward. Restarting from Game Over returns you to the current stage entry with five segments and its entry score. The last encounter ends with the fuse, the lighting switch, the countdown and the live window display. Music is generated in the browser from an original short disco sequence.
 
 The playtest uses Canvas 2D, a fixed camera per screen, and first-pass pixel art for the new street sections, bosses and performers. The [Benchy Cafe style frame](art/mockups/benchy-cafe-style-frame.png) remains the art target for the episode. Check scene readability and landmark resemblance before refining the new artwork. On touch devices, the game uses the landscape view and overlaid joystick and buttons. The game uses CC0 impact and smoke effects from the [external assets](ExternalAssets/) under the [supplied licence notice](ExternalAssets/public-license.pdf).
 

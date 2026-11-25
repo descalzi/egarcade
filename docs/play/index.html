@@ -69,7 +69,7 @@
 }
 @layer game {
   .screen { position: relative; }
-  .stage { position: relative; }
+  .stage { position: relative; container-type: inline-size; }
   .immersive-tools, #expand { display: none; }
   .home-link { color: var(--fg); font-weight: 700; text-decoration: none; }
   .home-link:hover { text-decoration: underline; }
@@ -148,7 +148,7 @@
   .title-screen img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; z-index: -1; }
   .title-screen::after { content: ""; position: absolute; inset: 0; z-index: -1;
     background: linear-gradient(0deg,#141020e8,transparent 47%); }
-  .pixel-control {
+  .pixel-control,.pixel-panel {
     --pixel-edge: polygon(9px 0,calc(100% - 9px) 0,calc(100% - 9px) 3px,
       calc(100% - 3px) 3px,calc(100% - 3px) 9px,100% 9px,
       100% calc(100% - 9px),calc(100% - 3px) calc(100% - 9px),
@@ -157,12 +157,12 @@
       3px calc(100% - 9px),0 calc(100% - 9px),0 9px,3px 9px,3px 3px,9px 3px);
     position: relative; isolation: isolate; border: 0; border-radius: 0; background: transparent;
   }
-  .pixel-control::before,.pixel-control::after {
+  .pixel-control::before,.pixel-control::after,.pixel-panel::before,.pixel-panel::after {
     content: ""; position: absolute; clip-path: var(--pixel-edge);
     z-index: -1; pointer-events: none;
   }
-  .pixel-control::before { inset: 0; background: var(--edge, #be895e); }
-  .pixel-control::after {
+  .pixel-control::before,.pixel-panel::before { inset: 0; background: var(--edge, #be895e); }
+  .pixel-control::after,.pixel-panel::after {
     inset: 3px; background: var(--face, #242037);
     box-shadow: inset 0 3px var(--shine, #67516a), inset 0 -4px var(--shade, #171326);
   }
@@ -197,20 +197,31 @@
   .character-option:nth-child(2) .portrait { animation-delay: -.9s; }
   .character-option .pixel-text { width: min(86%,calc(var(--letters) * 13px)); }
   .mission-bubble {
-    position: absolute; z-index: 1; inset: max(10%, calc(59% - 140px)) auto auto 4%;
-    width: min(90%, 390px); padding: 6px 12px 8px;
-    background: #241e36; border: 3px solid var(--accent);
-    box-shadow: 4px 4px #171326;
+    --edge: #d79577; --tail: 16px;
+    position: absolute; z-index: 1; inset: 0; pointer-events: none;
+    filter: drop-shadow(3px 4px #171326);
+  }
+  .mission-card {
+    position: absolute; bottom: calc(100% - var(--speaker-y) + var(--tail));
+    left: max(8px, calc(var(--speaker-x) - 40px)); width: min(82%, 390px);
+    padding: 10px 14px 8px; pointer-events: auto;
   }
   .mission-bubble::after {
-    content: ""; position: absolute; top: 100%; left: 8%;
-    width: 18px; height: 15px; background: var(--accent);
-    clip-path: polygon(0 0,100% 0,100% 30%,66% 30%,66% 60%,33% 60%,33% 100%,0 100%);
+    content: ""; position: absolute; top: calc(var(--speaker-y) - var(--tail) - 2px);
+    left: calc(var(--speaker-x) - 2px); width: 16px; height: 18px; background: var(--edge);
+    clip-path: polygon(0 0,100% 0,100% 35%,75% 35%,75% 60%,50% 60%,50% 82%,25% 82%,25% 100%,0 100%);
   }
-  .mission-speaker { display: block; color: var(--accent); text-transform: uppercase;
+  .mission-speaker { display: block; color: var(--edge); text-transform: uppercase;
     font: 700 .8rem/1.2 monospace; }
-  .mission-bubble[data-hero="teal"] { --accent: #9ae0cd; }
+  .mission-bubble[data-hero="teal"] { --edge: #9ae0cd; }
   .mission-bubble p { font-size: clamp(.875rem, 2.5vw, 1.05rem); line-height: 1.3; }
+  @container (max-width: 520px) {
+    .mission-card { top: max(6px, calc(var(--speaker-y) - 75px)); bottom: auto;
+      left: calc(var(--speaker-x) + 17px); right: 8px; width: auto; }
+    .mission-bubble::after { top: calc(var(--speaker-y) - 14px); left: var(--speaker-x);
+      width: 19px; height: 15px;
+      clip-path: polygon(100% 0,100% 80%,55% 80%,55% 100%,0 100%,0 75%,30% 75%,30% 50%,60% 50%,60% 25%,80% 25%,80% 0); }
+  }
   .story-action,.story-result { position: absolute; z-index: 1; left: 50%; transform: translateX(-50%); }
   .story-action { top: 34%; white-space: nowrap; color: #ffe8b4; }
   .story-action:active:not(:disabled) { transform: translate(-50%,2px); }
@@ -218,6 +229,15 @@
     background: #241b34f5; border: 3px solid #bd865e; text-align: center; box-shadow: 4px 4px #171326; }
   .story-result strong { display: block; color: #ffe3ae; font: 700 clamp(1rem,3vw,1.35rem)/1.25 monospace; }
   .story-result p { margin-bottom: 4px; }
+  .game-over { position: absolute; inset: 0; z-index: 3; display: grid; place-items: center;
+    background: #181124b8; }
+  .game-over-card { width: min(90%, 340px); padding: 20px 12px 16px; text-align: center;
+    --edge: #dd9a77; filter: drop-shadow(4px 5px #181124); }
+  .game-over-card .pixel-text { width: min(70%, 178px); margin: 0 auto 13px; }
+  .game-over-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+  .game-over-actions button { font-size: .9rem; }
+  #game-over-restart { --face: #6c424a; --highlight: #87565c; }
+  .screen:has(.game-over:not([hidden])) :is(.deck,.immersive-tools) { visibility: hidden; }
   .mission-continue { display: block; margin: 3px 0 0 auto; color: #ffe0a1; }
   .select-back { margin-top: 16px; min-width: 88px; display: inline-grid; place-items: center; }
   .select-back .pixel-text { width: 46px; }
@@ -259,9 +279,21 @@
     <canvas id="screen" tabindex="-1" width="480" height="270" role="img"
       aria-label="The Benchy Cafe and Book Nook at dusk.">This game requires a browser with Canvas support.</canvas>
     <section id="mission-bubble" class="mission-bubble" aria-labelledby="mission-speaker" hidden>
-      <strong id="mission-speaker" class="mission-speaker"></strong>
-      <p id="mission-text"></p>
-      <button id="mission-continue" class="mission-continue pixel-control" type="button" aria-describedby="mission-text">Continue</button>
+      <div class="mission-card pixel-panel">
+        <strong id="mission-speaker" class="mission-speaker"></strong>
+        <p id="mission-text"></p>
+        <button id="mission-continue" class="mission-continue pixel-control" type="button" aria-describedby="mission-text">Continue</button>
+      </div>
+    </section>
+    <section id="game-over" class="game-over" role="dialog" aria-modal="true" aria-labelledby="game-over-title" hidden>
+      <div class="game-over-card pixel-panel">
+        <strong id="game-over-title" class="screen-reader-only">Game Over</strong>
+        <canvas class="pixel-text" data-pixel="GAME OVER" data-ink="#ffd7a3" aria-hidden="true"></canvas>
+        <div class="game-over-actions">
+          <button id="game-over-restart" class="pixel-control" type="button">Restart Stage</button>
+          <button id="game-over-exit" class="pixel-control" type="button">Exit to Title</button>
+        </div>
+      </div>
     </section>
     <button id="story-action" class="story-action pixel-control" type="button" hidden>Fit spare fuse</button>
     <section id="story-result" class="story-result" aria-labelledby="result-title" hidden>
@@ -500,6 +532,9 @@ const stageLines={
   3:'It was the Disco King! He pulled the fuse. The lighting switch is by the Treetop Frog. I’m nearly there.'
 };
 const missionContinue = document.querySelector('#mission-continue');
+const gameOver = document.querySelector('#game-over');
+const gameOverRestart = document.querySelector('#game-over-restart');
+const gameOverExit = document.querySelector('#game-over-exit');
 const expandButton = document.querySelector('#expand');
 const mobilePause = document.querySelector('#mobile-pause');
 const mobileReplay = document.querySelector('#mobile-replay');
@@ -510,7 +545,10 @@ let nativeFullscreen = false;
 let changingView = false;
 
 function focusEncounter(){
-  const target=!missionBubble.hidden?missionContinue:!storyResult.hidden?storyResult.querySelector('button'):screen;
+  let target=screen;
+  if(!gameOver.hidden)target=gameOverRestart;
+  else if(!missionBubble.hidden)target=missionContinue;
+  else if(!storyResult.hidden)target=storyResult.querySelector('button');
   target.focus({preventScroll:true});
 }
 async function enterImmersive(){
@@ -592,23 +630,29 @@ const pixelLetters={
   C:[14,17,16,16,16,17,14], E:[31,16,16,30,16,16,31],
   G:[14,17,16,23,17,17,14], H:[17,17,17,31,17,17,17],
   I:[31,4,4,4,4,4,31], K:[17,18,20,24,20,18,17],
-  L:[16,16,16,16,16,16,31], O:[14,17,17,17,17,17,14],
+  L:[16,16,16,16,16,16,31], M:[17,27,21,21,17,17,17], O:[14,17,17,17,17,17,14],
   P:[30,17,17,30,16,16,16], R:[30,17,17,30,20,18,17],
   S:[15,16,16,14,1,1,30], T:[31,4,4,4,4,4,4],
-  Y:[17,17,10,4,4,4,4], Z:[31,1,2,4,8,16,31]
+  V:[17,17,17,17,17,10,4], Y:[17,17,10,4,4,4,4], Z:[31,1,2,4,8,16,31],
+  0:[14,17,19,21,25,17,14], 1:[4,12,4,4,4,4,14], 2:[14,17,1,2,4,8,31],
+  3:[30,1,1,14,1,1,30], 4:[2,6,10,18,31,2,2], 5:[31,16,16,30,1,1,30],
+  6:[14,16,16,30,17,17,14], 7:[31,1,2,4,8,8,8], 8:[14,17,17,14,17,17,14],
+  9:[14,17,17,15,1,1,14]
 };
 function paintPixelLabel(canvas){
   const text=canvas.dataset.pixel;
   canvas.width=text.length*6-1;
   canvas.height=7;
-  const brush=canvas.getContext('2d');
-  brush.fillStyle=canvas.dataset.ink||'#ffe0a1';
+  pixelLabel(canvas.getContext('2d'),text,0,0,1,canvas.dataset.ink||'#ffe0a1');
+}
+function pixelLabel(g,text,x,y,scale,colour){
+  g.fillStyle=colour;
   for(const [column,letter] of [...text].entries()){
     const rows=pixelLetters[letter];
     if(!rows)continue;
-    for(const [y,bits] of rows.entries()){
-      for(let x=0;x<5;x++){
-        if(bits&(16>>x))brush.fillRect(column*6+x,y,1,1);
+    for(const [row,bits] of rows.entries()){
+      for(let bit=0;bit<5;bit++){
+        if(bits&(16>>bit))g.fillRect(x+(column*6+bit)*scale,y+row*scale,scale,scale);
       }
     }
   }
@@ -639,23 +683,23 @@ function zombieAt(x,y,face,buried=false){
 }
 
 const sections=[
-  {stage:1,name:'THE BLACKOUT',place:'Benchy Cafe',art:'cafe',hint:'Jump for the gold present or smash its crate.',
+  {stage:1,place:'Benchy Cafe',art:'cafe',hint:'Jump for the gold present or smash its crate.',
     waves:[[[346,228,-1,true]], [[-42,240,1],[522,221,-1]]]},
-  {stage:1,name:'THE BLACKOUT',place:'Emma & Lou Interiors',art:'interiors',hint:'Collect a present and take a mince pie if you need it.',
+  {stage:1,place:'Emma & Lou Interiors',art:'interiors',hint:'Collect a present and take a mince pie if you need it.',
     waves:[[[302,218,-1,true]]]},
-  {stage:1,name:'THE BLACKOUT',place:'Memorial Square',art:'square',hint:'Stay on the pavement and look for the Nutcracker beyond the memorial.',
+  {stage:1,place:'Memorial Square',art:'square',hint:'Stay on the pavement and look for the Nutcracker beyond the memorial.',
     waves:[[[300,222,-1,true],[397,242,-1,true]],['nutcracker']]},
-  {stage:2,name:'WINDOW SHOPPING',place:'Tudor High Street',art:'tudor',hint:'Watch the doorways along the Tudor row.',
+  {stage:2,place:'Tudor High Street',art:'tudor',hint:'Watch the doorways along the Tudor row.',
     waves:[[[282,214,-1,true],[385,246,-1,true]], [[-32,241,1],[508,213,-1]]]},
-  {stage:2,name:'WINDOW SHOPPING',place:'The Dorset Oak',art:'pub',hint:'Keep clear of the carriage passage when the trolley comes through.',
+  {stage:2,place:'The Dorset Oak',art:'pub',hint:'Keep clear of the carriage passage when the trolley comes through.',
     waves:[[[280,225,-1],[380,241,-1],[480,207,-1]],['shopper']]},
-  {stage:3,name:'ONE LAST NUMBER',place:'Sackville College',art:'college',hint:'The Treetop Frog is just ahead. Clear a path to the lighting switch.',
+  {stage:3,place:'Sackville College',art:'college',hint:'The Treetop Frog is just ahead. Clear a path to the lighting switch.',
     waves:[[[287,221,-1,true],[426,242,-1,true]], [[-38,240,1],[516,227,-1]]]},
-  {stage:3,name:'ONE LAST NUMBER',place:'The Treetop Frog',art:'frog',hint:'The windows are still covered. Get past the Disco King to reach the switch.',
+  {stage:3,place:'The Treetop Frog',art:'frog',hint:'The windows are still covered. Get past the Disco King to reach the switch.',
     waves:[[[280,220,-1],[402,239,-1]],['disco']]}
 ];
 const bosses={
-  nutcracker:{name:'The Nutcracker',frame:0,hp:9,tell:.78,speed:225,recover:1.25,bursts:1,hint:'Step up or down to dodge the charge. Attack while it recovers.'},
+  nutcracker:{name:'The Nutcracker',frame:0,hp:9,tell:.64,recover:1.42,leap:.72,hint:'Move out of the marked landing spot. Counter after the stomp.'},
   shopper:{name:'The Last-Minute Shopper',frame:1,hp:11,tell:.65,speed:260,recover:1.45,bursts:1,hint:'Dodge the trolley rush, then get close while it turns.'},
   disco:{name:'The Disco King',frame:2,hp:13,tell:.55,speed:210,recover:1.65,bursts:2,hint:'Dodge two dance dashes, then attack during the final pose.'}
 };
@@ -672,8 +716,6 @@ function spawnWave(s){
     if(typeof entry!=='string')return zombieAt(...entry);
     const design=bosses[entry];
     status.textContent=design.name+' · '+design.hint;
-    s.notice=design.name;
-    s.noticeTime=2.8;
     return {boss:entry,x:396,y:224,face:-1,hp:design.hp,phase:'approach',time:0,
       stride:0,stun:0,sink:0,rise:null,bursts:0};
   });
@@ -683,7 +725,6 @@ function newEncounter(look,section=0,hearts=5,score=0,entryScore=score){
     hero:{look,x:62,y:224,z:0,vz:0,face:1,hearts,immune:0,
       swing:0,combo:0,comboTime:0,kicked:false,hurt:0,stride:0,airborne:false,landing:0,pose:'idle'},
     section,entryScore,score,effects:[],wave:0,cleared:false,phase:'fight',time:0,
-    notice:sections[section].place,noticeTime:2.6,
     gifts:[{x:96,y:223,height:0},
       {x:200,y:201,height:crateHeight,gold:section===stageStart[sections[section].stage],crate:'gold'}],
     crates:[{id:'red',x:141,y:237,intact:true},{id:'gold',x:200,y:201,intact:true}],
@@ -726,8 +767,7 @@ function completeWave(s){
     syncStoryControls();
   }else{
     status.textContent='Street clear. Head right when you’re ready.';
-    s.notice='STREET CLEAR';
-    s.noticeTime=2;
+    s.time=0;
   }
 }
 function hurtHero(s,direction){
@@ -741,8 +781,11 @@ function hurtHero(s,direction){
   h.comboTime=0;
   moveHero(h,s.crates,direction*11,0);
   if(h.hearts>0)return;
-  restartStory();
-  status.textContent='Back at the start of this stage with full health.';
+  s.phase='gameOver';
+  clearInput();
+  syncStoryControls();
+  status.textContent='Game over. Restart this stage or exit to the title screen.';
+  focusEncounter();
 }
 function updateBoss(s,z,dt){
   const h=s.hero;
@@ -759,14 +802,33 @@ function updateBoss(s,z,dt){
     }
     z.phase='tell';
     z.time=design.tell;
-    z.bursts=design.bursts;
+    if(design.leap){
+      z.landingX=clamp(h.x,22,458);
+      z.landingY=h.y;
+    }else z.bursts=design.bursts;
     return;
   }
   if(z.phase==='tell'){
     if(z.boss==='shopper')z.y+=clamp(h.y-z.y,-40*dt,40*dt);
     if(!z.time){
-      z.phase='dash';
-      z.time=z.boss==='disco'?.52:.64;
+      z.phase=design.leap?'leap':'dash';
+      z.time=design.leap??(z.boss==='disco'?.52:.64);
+      if(design.leap){
+        z.launchX=z.x;
+        z.launchY=z.y;
+      }
+    }
+    return;
+  }
+  if(z.phase==='leap'){
+    const progress=1-z.time/design.leap;
+    z.x=z.launchX+(z.landingX-z.launchX)*progress;
+    z.y=z.launchY+(z.landingY-z.launchY)*progress;
+    if(!z.time){
+      z.phase='recover';
+      z.time=design.recover;
+      effect(s,'stomp',z.x,z.y);
+      if(close(z,h,27,17)&&h.z<14)hurtHero(s,h.x<z.x?-1:1);
     }
     return;
   }
@@ -880,6 +942,8 @@ function choose(next,showBriefing=false){
 }
 function showMission(text){
   missionBubble.dataset.hero=mode;
+  missionBubble.style.setProperty('--speaker-x',100*state.hero.x/screen.width+'%');
+  missionBubble.style.setProperty('--speaker-y',100*(state.hero.y-60)/screen.height+'%');
   missionSpeaker.textContent=heroNames[mode];
   missionText.textContent=text;
   missionBubble.hidden=false;
@@ -898,7 +962,7 @@ missionContinue.addEventListener('click',()=>{
   focusEncounter();
 });
 function setPaused(next){
-  if(!state||!missionBubble.hidden||paused===next)return;
+  if(!state||!gameOver.hidden||!missionBubble.hidden||paused===next)return;
   paused=next;
   clearInput();
   pauseButton.textContent=paused?'Resume':'Pause';
@@ -922,7 +986,8 @@ function syncStoryControls(){
   storyAction.hidden=!canUseSwitch;
   if(canUseSwitch)storyAction.textContent=state.phase==='fuse'?'Fit spare fuse':'Flip the switch';
   storyResult.hidden=state?.phase!=='complete';
-  touch.hidden=!state||paused||!missionBubble.hidden||['countdown','reveal','complete'].includes(state.phase);
+  gameOver.hidden=state?.phase!=='gameOver';
+  touch.hidden=!state||paused||!missionBubble.hidden||['countdown','reveal','complete','gameOver'].includes(state.phase);
   mobileReplay.hidden=!state||!(paused||state.phase==='complete');
   mobileReplay.textContent=state?.phase==='complete'?'Play again':'Restart stage';
 }
@@ -1041,6 +1106,17 @@ window.addEventListener('keydown',event=>{
     }
     return;
   }
+  if(!gameOver.hidden){
+    if(event.code==='Tab'){
+      event.preventDefault();
+      (document.activeElement===gameOverRestart?gameOverExit:gameOverRestart).focus();
+    }else if(event.code==='KeyR'&&!event.repeat){
+      event.preventDefault();
+      restartStory();
+      focusEncounter();
+    }
+    return;
+  }
   if(event.code==='Escape'){
     event.preventDefault();
     if(!event.repeat){
@@ -1095,9 +1171,16 @@ pauseButton.addEventListener('click',()=>{
   setPaused(!paused);
   if(!paused)screen.focus({preventScroll:true});
 });
-titleButton.addEventListener('click',()=>{
+async function exitStory(){
+  if(cabinet.hasAttribute('data-immersive'))await leaveImmersive();
   choose('style');
   startButton.focus({preventScroll:true});
+}
+titleButton.addEventListener('click',exitStory);
+gameOverExit.addEventListener('click',exitStory);
+gameOverRestart.addEventListener('click',()=>{
+  restartStory();
+  focusEncounter();
 });
 
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
@@ -1187,12 +1270,12 @@ function update(dt) {
     return;
   }
   const s=state;
-  if(s.phase==='complete')return;
+  if(s.phase==='complete'||s.phase==='gameOver')return;
   if(s.phase==='countdown'||s.phase==='reveal'){
     updateShow(s,dt);
     return;
   }
-  s.noticeTime=Math.max(0,s.noticeTime-dt);
+  if(s.cleared&&s.phase==='fight')s.time+=dt;
   const h=s.hero;
   for(const spark of s.effects)spark.age+=dt;
   s.effects=s.effects.filter(spark=>spark.age<spark.duration);
@@ -1258,7 +1341,7 @@ function update(dt) {
     }
     if(z.boss){
       updateBoss(s,z,dt);
-      if(state!==s)return;
+      if(s.phase==='gameOver')return;
       continue;
     }
     if(z.rise!==null){
@@ -1290,7 +1373,7 @@ function update(dt) {
       if(remaining>shoveContact&&z.shove<=shoveContact&&close(z,h,shoveReach,10)&&
         (h.x-z.x)*z.face>=-4&&h.z<13&&!h.immune){
         hurtHero(s,z.face);
-        if(state!==s)return;
+        if(s.phase==='gameOver')return;
       }
       if(z.shove===0)z.recover=.48;
     }else if(z.tell>0){
@@ -1352,10 +1435,12 @@ function drawBoss(g,boss){
   const design=bosses[boss.boss];
   const motion=!reducedMotion.matches;
   const bob=motion&&boss.phase==='approach'?Math.round(Math.sin(boss.stride*19)*2):0;
+  const lift=boss.phase==='leap'?52*Math.sin(Math.PI*boss.time/design.leap):0;
   groundShadow(g,boss.x,boss.y,24);
   g.save();
-  g.translate(Math.round(boss.x),Math.round(boss.y)+bob);
+  g.translate(Math.round(boss.x),Math.round(boss.y-lift)+bob);
   g.scale(boss.face,1);
+  if(design.leap)g.scale(1.12,1.14);
   if(boss.phase==='dash')g.transform(1,0,-.12,1,0,0);
   if(boss.phase==='tell')g.scale(1,.91);
   if(boss.phase==='recover')g.scale(1,.85);
@@ -1365,20 +1450,37 @@ function drawBoss(g,boss){
   }
   sprite(g,storyCast,design.frame,0,96,96,-50,-94,100,96);
   g.restore();
-  if(boss.phase==='tell'&&boss.hp>0)label(g,'!',boss.x-4,boss.y-93,15,'#ffcf76');
+  if(boss.phase==='tell'&&boss.hp>0)label(g,'!',boss.x-4,boss.y-(design.leap?105:93),15,'#ffcf76');
+}
+function drawExitCue(g,time){
+  const animate=!reducedMotion.matches&&time<.9;
+  const pulse=animate&&Math.floor(time/.225)%2===0;
+  const x=378+(animate?Math.round(Math.min(time/.16,1)*8):8);
+  const ink=pulse?'#fff8d4':'#ffd489';
+  pixelLabel(g,'GO',x+2,159,2,'#251a33');
+  pixelLabel(g,'GO',x,157,2,ink);
+  const arrow=[[0,0],[5,0],[5,3],[9,3],[9,6],[13,6],[13,10],[9,10],[9,13],[5,13],[5,16],[0,16],[0,12],[4,12],[4,9],[8,9],[8,7],[4,7],[4,4],[0,4]];
+  for(const left of [x+28,x+44]){
+    shape(g,arrow.map(([a,b])=>[left+a+2,157+b+2]),'#251a33');
+    shape(g,arrow.map(([a,b])=>[left+a,157+b]),ink);
+  }
+  if(pulse){
+    box(g,x-8,161,5,2,'#ffdd9e');
+    box(g,x-13,168,8,2,'#ffdd9e');
+  }
+}
+function drawStompRing(g,x,y,width,height,colour){
+  g.save();
+  g.strokeStyle=colour;
+  g.lineWidth=2;
+  g.beginPath();
+  g.ellipse(Math.round(x),Math.round(y),width,height,0,0,Math.PI*2);
+  g.stroke();
+  g.restore();
 }
 function drawStageOverlay(g,s){
-  const section=sections[s.section];
-  const title=section.stage+' / 3  '+section.name;
   g.save();
   g.textAlign='center';
-  box(g,137,7,243,21,'#20192d');
-  box(g,137,7,243,1,'#bb865f');
-  label(g,title,258,21,10,'#ffe2ad');
-  if(s.noticeTime>0&&s.phase==='fight'&&!s.enemies.some(z=>z.boss)){
-    box(g,117,62,246,21,'#241a31');
-    label(g,s.notice,240,76,12,'#fff0db');
-  }
   const boss=s.enemies.find(z=>z.boss&&z.hp>0);
   if(boss){
     const design=bosses[boss.boss];
@@ -1387,12 +1489,7 @@ function drawStageOverlay(g,s){
     box(g,149,47,220,4,'#4d3546');
     box(g,149,47,Math.round(220*boss.hp/design.hp),4,'#f6a16f');
     if(boss.phase==='recover')label(g,'COUNTER NOW',259,66,9,'#9ae0cd');
-    else if(boss.phase==='tell')label(g,'DODGE ACROSS THE PAVEMENT',259,66,9,'#ffd28f');
-  }
-  if(s.cleared&&s.phase==='fight'){
-    box(g,397,151,79,19,'#241a31');
-    label(g,'GO RIGHT',432,164,9,'#ffe8b4');
-    shape(g,[[454,155],[466,160],[454,166]],'#ffdb86');
+    else if(boss.phase==='tell')label(g,design.leap?'CLEAR THE LANDING SPOT':'DODGE ACROSS THE PAVEMENT',259,66,9,'#ffd28f');
   }
   if(s.phase==='fuse'||s.phase==='switch'){
     box(g,418,139,18,27,'#282134');
@@ -1499,17 +1596,8 @@ function drawHealing(g,h){
   label(g,'+1',h.x+13,feet-48-motion*10,10,'#b8f3ce');
   g.restore();
 }
-function hudPanel(g,x,y,w,h){
-  box(g,x+1,y,w-2,h,'#674358');
-  box(g,x,y+1,w,h-2,'#674358');
-  box(g,x+2,y+1,w-4,1,'#bc8668');
-  box(g,x+2,y+2,w-4,h-4,'#221d32');
-}
 function hud(g,hero,score){
-  const x=8,y=19;
-  hudPanel(g,5,5,124,33);
-  label(g,heroNames[hero.look].toUpperCase(),10,15,9,hero.look==='rust'?'#f4b49a':'#a2e3d6');
-  label(g,hero.hearts+'/5',107,15,9,'#f3e5d1');
+  const x=8,y=8;
   g.drawImage(healthFrame,0,0,8,16,x,y,8,16);
   g.drawImage(healthFrame,8,0,32,16,x+8,y,94,16);
   g.drawImage(healthFrame,40,0,8,16,x+102,y,8,16);
@@ -1523,9 +1611,12 @@ function hud(g,hero,score){
     box(g,left,y+5,16,6,full?fill:'#363548');
     if(full)box(g,left,y+5,16,2,healing&&i===hero.hearts-1?'#edffe9':highlight);
   }
-  hudPanel(g,390,5,85,33);
-  label(g,'SCORE',398,15,9,'#dcc9b5');
-  label(g,String(score).padStart(6,'0'),398,31,15,'#ffe0a1');
+  const tally=String(score).padStart(6,'0');
+  const tallyX=473-(tally.length*6-1)*2;
+  pixelLabel(g,tally,tallyX+1,19,2,'#241627');
+  pixelLabel(g,'SCORE',446,9,1,'#241627');
+  pixelLabel(g,tally,tallyX,17,2,'#ffe0a1');
+  pixelLabel(g,'SCORE',445,8,1,'#fff1dd');
 }
 function drawEncounter(g,s){
   scene(g,s);
@@ -1543,6 +1634,13 @@ function drawEncounter(g,s){
       box(g,x-6,162-shift,12,19,shift%2?'#625371':'#536c72');
       box(g,x-4,155-shift,8,8,'#be937f');
       box(g,x-5,153-shift,10,4,'#4a364b');
+    }
+  }
+  if(s.cleared&&s.phase==='fight')drawExitCue(g,s.time);
+  for(const boss of s.enemies){
+    if(boss.boss==='nutcracker'&&(boss.phase==='tell'||boss.phase==='leap')){
+      drawStompRing(g,boss.landingX,boss.landingY,27,17,'#46203b');
+      drawStompRing(g,boss.landingX,boss.landingY,24,14,'#f6b56e');
     }
   }
   const draws=[];
@@ -1578,6 +1676,12 @@ function drawEncounter(g,s){
     g.restore();
   }
   for(const spark of s.effects){
+    if(spark.kind==='stomp'){
+      const progress=spark.age/spark.duration;
+      const spread=reducedMotion.matches?0:progress*16;
+      if(progress<.8)drawStompRing(g,spark.x,spark.y,25+spread,13+spread/2,'#ffc888');
+      continue;
+    }
     if(spark.kind==='gift'||spark.kind==='gold'){
       drawReward(g,spark);
       continue;
