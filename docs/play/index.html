@@ -196,6 +196,22 @@
     transform-origin: 50% 100%; animation: breathe 2.6s ease-in-out infinite; }
   .character-option:nth-child(2) .portrait { animation-delay: -.9s; }
   .character-option .pixel-text { width: min(86%,calc(var(--letters) * 13px)); }
+  .mission-bubble {
+    position: absolute; z-index: 1; inset: max(10%, calc(59% - 140px)) auto auto 4%;
+    width: min(90%, 390px); padding: 6px 12px 8px;
+    background: #241e36; border: 3px solid var(--accent);
+    box-shadow: 4px 4px #171326;
+  }
+  .mission-bubble::after {
+    content: ""; position: absolute; top: 100%; left: 8%;
+    width: 18px; height: 15px; background: var(--accent);
+    clip-path: polygon(0 0,100% 0,100% 30%,66% 30%,66% 60%,33% 60%,33% 100%,0 100%);
+  }
+  .mission-speaker { display: block; color: var(--accent); text-transform: uppercase;
+    font: 700 .8rem/1.2 monospace; }
+  .mission-bubble[data-hero="teal"] { --accent: #9ae0cd; }
+  .mission-bubble p { font-size: clamp(.875rem, 2.5vw, 1.05rem); line-height: 1.3; }
+  .mission-continue { display: block; margin: 3px 0 0 auto; color: #ffe0a1; }
   .select-back { margin-top: 16px; min-width: 88px; display: inline-grid; place-items: center; }
   .select-back .pixel-text { width: 46px; }
   .screen-reader-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
@@ -235,6 +251,11 @@
     </div>
     <canvas id="screen" tabindex="-1" width="480" height="270" role="img"
       aria-label="The Benchy Cafe and Book Nook at dusk.">This game requires a browser with Canvas support.</canvas>
+    <section id="mission-bubble" class="mission-bubble" aria-labelledby="mission-speaker" hidden>
+      <strong id="mission-speaker" class="mission-speaker"></strong>
+      <p id="mission-text">Got a spare fuse from Robert Dyes. I need to get it to the High Street lights in time for the Big Reveal!</p>
+      <button id="mission-continue" class="mission-continue pixel-control" type="button" aria-describedby="mission-text">Continue</button>
+    </section>
     <div id="touch" aria-label="Touch controls" hidden>
       <div id="joystick" role="group" aria-label="Drag the joystick to move">
         <span class="stick-knob" aria-hidden="true"></span>
@@ -457,6 +478,10 @@ const keyboardControls = document.querySelector('.controls');
 const titleArt = document.querySelector('#title-art');
 const touch = document.querySelector('#touch');
 const cabinet = document.querySelector('.screen');
+const missionBubble = document.querySelector('#mission-bubble');
+const missionSpeaker = document.querySelector('#mission-speaker');
+const missionContinue = document.querySelector('#mission-continue');
+const encounterHint = 'Defeat the shopper zombie. Jump for the gold present or smash its crate.';
 const expandButton = document.querySelector('#expand');
 const mobilePause = document.querySelector('#mobile-pause');
 const mobileReplay = document.querySelector('#mobile-replay');
@@ -466,6 +491,10 @@ const portraitView = matchMedia('(orientation: portrait)');
 let nativeFullscreen = false;
 let changingView = false;
 
+function focusEncounter(){
+  const target=missionBubble.hidden?screen:missionContinue;
+  target.focus({preventScroll:true});
+}
 async function enterImmersive(){
   if(!state||changingView||cabinet.hasAttribute('data-immersive'))return;
   changingView=true;
@@ -483,7 +512,7 @@ async function enterImmersive(){
     // The CSS stage fills the viewport and rotates when the screen remains portrait.
   } finally {
     changingView=false;
-    if(cabinet.hasAttribute('data-immersive'))screen.focus({preventScroll:true});
+    if(cabinet.hasAttribute('data-immersive'))focusEncounter();
   }
 }
 function restorePage(){
@@ -495,7 +524,7 @@ function restorePage(){
   document.querySelector('.skip').inert=false;
   document.querySelector('.title').inert=false;
   clearInput();
-  screen.focus({preventScroll:true});
+  focusEncounter();
 }
 async function leaveImmersive(){
   if(document.fullscreenElement===cabinet){
@@ -660,14 +689,21 @@ function clearInput(){
   pressed.clear();
   for(const key of touch.querySelectorAll('[data-key]'))delete key.dataset.held;
 }
-function choose(next){
+function choose(next,showBriefing=false){
   clearInput();
   mode=next;
   paused=false;
   state=mode==='style'?null:newEncounter(mode);
   screen.setAttribute('aria-label',state?'Playable pavement outside Benchy Cafe.':'The Benchy Cafe and Book Nook at dusk.');
-  touch.hidden=!state;
-  pauseButton.hidden=!state;
+  const briefing=!!state&&showBriefing;
+  missionBubble.hidden=!briefing;
+  if(briefing){
+    missionBubble.dataset.hero=mode;
+    missionSpeaker.textContent=heroNames[mode];
+  }
+  touch.hidden=!state||briefing;
+  pauseButton.hidden=!state||briefing;
+  mobilePause.hidden=briefing;
   expandButton.hidden=!state;
   mobilePause.textContent='Pause';
   mobileReplay.hidden=true;
@@ -679,10 +715,20 @@ function choose(next){
   keyboardControls.hidden=!state;
   playButton.textContent=state?'Restart':'Play encounter';
   status.dataset.clear='false';
-  status.textContent=state?'Defeat the shopper zombie. Jump for the gold present or smash its crate.':'';
+  status.textContent=state&&!briefing?encounterHint:'';
 }
+missionContinue.addEventListener('click',()=>{
+  if(missionBubble.hidden)return;
+  clearInput();
+  missionBubble.hidden=true;
+  touch.hidden=false;
+  pauseButton.hidden=false;
+  mobilePause.hidden=false;
+  status.textContent=encounterHint;
+  focusEncounter();
+});
 function setPaused(next){
-  if(!state||paused===next)return;
+  if(!state||!missionBubble.hidden||paused===next)return;
   paused=next;
   clearInput();
   pauseButton.textContent=paused?'Resume':'Pause';
@@ -713,7 +759,7 @@ window.addEventListener('keydown',event=>{
     }
     return;
   }
-  if(paused||!controls.has(event.code))return;
+  if(paused||!missionBubble.hidden||!controls.has(event.code))return;
   if(event.target.closest?.('input, button, a')&&event.code!=='KeyR')return;
   event.preventDefault();
   press(event.code);
@@ -745,8 +791,8 @@ document.querySelector('#select-back').addEventListener('click',()=>{
 });
 for(const button of characterButtons){
   button.addEventListener('click',()=>{
-    choose(button.dataset.hero);
-    screen.focus({preventScroll:true});
+    choose(button.dataset.hero,true);
+    focusEncounter();
     if(touchPointer.matches)enterImmersive();
   });
 }
@@ -840,7 +886,7 @@ function strike(s,attackPose) {
   }
 }
 function update(dt) {
-  if(!state||paused)return;
+  if(!state||paused||!missionBubble.hidden)return;
   if(pressed.has('restart')){
     choose(mode);
     return;
