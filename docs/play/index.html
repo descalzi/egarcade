@@ -66,10 +66,7 @@
   .controls dt { color: var(--fg); }
   kbd { font: 0.875rem ui-monospace, monospace; font-variant-numeric: tabular-nums; }
   #touch { touch-action: none; justify-content: space-between; padding: 0 12px 12px; }
-  #touch button { min-width: 44px; padding-inline: 8px; touch-action: none; }
-  #touch button[data-held=true] { background: var(--accent); color: var(--on-accent); }
   .touch-group { display: flex; gap: 8px; }
-  .touch-group svg { display: block; width: 18px; height: 18px; margin: auto; }
   @media (pointer: fine) { #touch { display: none; } }
   @media (max-width: 440px) { .deck { padding: 8px; gap: 8px; } #touch { padding-inline: 8px; } }
   @media (prefers-reduced-motion: reduce) { button:active { transform: none; } }
@@ -93,20 +90,43 @@
     position: absolute; top: max(8px, env(safe-area-inset-top));
     left: 50%; transform: translateX(-50%); z-index: 1; display: flex; gap: 8px;
   }
-  .screen[data-immersive] .immersive-tools button,
-  #touch button { background: #211c35eb; border-color: #a395b3; }
+  .screen[data-immersive] .immersive-tools button { background: #211c35eb; border-color: #a395b3; }
   .status[data-clear=true] { font-weight: 650; }
   body:has(.screen[data-immersive]) { overflow: hidden; }
-  #touch { position: absolute; inset: auto 0 0; padding: 8px; pointer-events: none; }
-  #touch button { pointer-events: auto; }
-  .touch-group:first-child {
-    display: grid; grid-template-columns: repeat(3, 44px); gap: 6px;
+  #touch {
+    position: absolute; inset: auto 0 0; padding: 8px; pointer-events: none;
+    --stick-size: clamp(74px, 18vmin, 104px);
+    --button-size: clamp(50px, 14vmin, 66px);
   }
-  #touch [data-key="ArrowUp"] { grid-area: 1 / 2; }
-  #touch [data-key="ArrowLeft"] { grid-area: 2 / 1; }
-  #touch [data-key="ArrowDown"] { grid-area: 2 / 2; }
-  #touch [data-key="ArrowRight"] { grid-area: 2 / 3; }
-  .touch-group:last-child { align-self: end; }
+  #joystick {
+    display: grid; place-items: center; pointer-events: auto; touch-action: none;
+    width: var(--stick-size); height: var(--stick-size); border-radius: 50%;
+    border: 2px solid #c5b6cc; background: #221c31cc;
+    box-shadow: inset 0 0 0 5px #17102170; user-select: none;
+  }
+  .stick-knob {
+    width: 44%; height: 44%; border-radius: 50%; border: 2px solid #e2c8af;
+    background: #56445f; box-shadow: inset 0 -3px #342b47;
+    transform: translate(var(--stick-x, 0px), var(--stick-y, 0px));
+    pointer-events: none;
+  }
+  .touch-group { align-self: end; }
+  #touch .arcade-button {
+    pointer-events: auto; touch-action: none; user-select: none;
+    display: grid; place-items: center; width: var(--button-size); height: var(--button-size);
+    padding: 0; border-radius: 50%; border: 2px solid var(--button-rim);
+    background: var(--button-face); box-shadow: inset 0 -4px #1b102478;
+  }
+  .jump-button { --button-rim: #92c8be; --button-face: #27665fdb; }
+  .attack-button { --button-rim: #e4a18a; --button-face: #963f44db; }
+  .arcade-button span {
+    pointer-events: none; border-radius: 12px; padding: 1px 4px; background: #22182c80;
+    color: #fff1e4; font-size: .75rem; font-weight: 550;
+  }
+  #touch .arcade-button[data-held=true] {
+    background: var(--button-rim); box-shadow: inset 0 3px #281b3766;
+  }
+  .arcade-button[data-held=true] span { background: #25192dcc; }
   .screen[data-immersive] #touch {
     padding: 8px max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
   }
@@ -144,13 +164,13 @@
     <canvas id="screen" tabindex="-1" width="480" height="270" role="img"
       aria-label="The Benchy Cafe and Book Nook at dusk.">This game requires a browser with Canvas support.</canvas>
     <div id="touch" aria-label="Touch controls" hidden>
-      <div class="touch-group">
-        <button data-key="ArrowLeft" aria-label="Move left"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 4l-8 8 8 8"/></svg></button>
-        <button data-key="ArrowUp" aria-label="Move up"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15l8-8 8 8"/></svg></button>
-        <button data-key="ArrowDown" aria-label="Move down"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9l8 8 8-8"/></svg></button>
-        <button data-key="ArrowRight" aria-label="Move right"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 4l8 8-8 8"/></svg></button>
+      <div id="joystick" role="group" aria-label="Drag the joystick to move">
+        <span class="stick-knob" aria-hidden="true"></span>
       </div>
-      <div class="touch-group"><button data-key="Space">Jump</button><button data-key="KeyJ">Attack</button></div>
+      <div class="touch-group">
+        <button type="button" class="arcade-button jump-button" data-key="Space"><span>Jump</span></button>
+        <button type="button" class="arcade-button attack-button" data-key="KeyJ"><span>Attack</span></button>
+      </div>
     </div>
     </div>
     </div>
@@ -370,6 +390,7 @@ const mobilePause = document.querySelector('#mobile-pause');
 const mobileReplay = document.querySelector('#mobile-replay');
 const leaveButton = document.querySelector('#leave-full');
 const touchPointer = matchMedia('(pointer: coarse)');
+const portraitView = matchMedia('(orientation: portrait)');
 let nativeFullscreen = false;
 let changingView = false;
 
@@ -477,7 +498,57 @@ function newEncounter(look){
 function effect(s,kind,x,y){
   s.effects.push({kind,x,y,age:0,duration:kind==='hit'?.15:.32});
 }
+const joystick = document.querySelector('#joystick');
+let stickPointer = null;
+let stickX = 0, stickY = 0;
+
+function resetStick(){
+  const pointer=stickPointer;
+  stickPointer=null;
+  stickX=stickY=0;
+  joystick.style.removeProperty('--stick-x');
+  joystick.style.removeProperty('--stick-y');
+  if(pointer!==null&&joystick.hasPointerCapture(pointer))joystick.releasePointerCapture(pointer);
+}
+
+function aimStick(event){
+  const bounds=joystick.getBoundingClientRect();
+  const x=event.clientX-(bounds.left+bounds.width/2);
+  const y=event.clientY-(bounds.top+bounds.height/2);
+  // In the portrait fallback the entire play view is rotated clockwise.
+  const rotated=portraitView.matches&&cabinet.hasAttribute('data-immersive');
+  const localX=rotated?y:x;
+  const localY=rotated?-x:y;
+  const travel=bounds.width*.29;
+  const distance=Math.hypot(localX,localY);
+  const visualScale=distance?Math.min(1,travel/distance):0;
+  joystick.style.setProperty('--stick-x',localX*visualScale+'px');
+  joystick.style.setProperty('--stick-y',localY*visualScale+'px');
+  const strength=clamp((distance/travel-.14)/.86,0,1);
+  const movementScale=distance?strength/distance:0;
+  stickX=localX*movementScale;
+  stickY=localY*movementScale;
+}
+
+joystick.addEventListener('pointerdown',event=>{
+  if(stickPointer!==null||!state||paused||event.button!==0)return;
+  event.preventDefault();
+  stickPointer=event.pointerId;
+  joystick.setPointerCapture(event.pointerId);
+  aimStick(event);
+});
+joystick.addEventListener('pointermove',event=>{
+  if(event.pointerId===stickPointer)aimStick(event);
+});
+for(const type of ['pointerup','pointercancel','lostpointercapture']){
+  joystick.addEventListener(type,event=>{
+    if(event.pointerId===stickPointer)resetStick();
+  });
+}
+portraitView.addEventListener('change',resetStick);
+
 function clearInput(){
+  resetStick();
   held.clear();
   pressed.clear();
   for(const key of touch.querySelectorAll('[data-key]'))delete key.dataset.held;
@@ -664,10 +735,14 @@ function update(dt) {
   const free=!h.hurt&&!h.swing;
   const wantsAttack=free&&pressed.has('attack')&&(!h.airborne||!h.kicked);
   const canStep=free&&!pickupSquatActive(h);
-  const dx=(canStep||wantsAttack)?Number(down('right'))-Number(down('left')):0;
-  const dy=canStep?Number(down('down'))-Number(down('up')):0;
-  if(dx)h.face=Math.sign(dx);
-  const diagonal=dx&&dy?Math.SQRT1_2:1;
+  const keyX=Number(down('right'))-Number(down('left'));
+  const keyY=Number(down('down'))-Number(down('up'));
+  const horizontal=keyX||keyY?keyX:stickX;
+  const vertical=keyX||keyY?keyY:stickY;
+  const dx=(canStep||wantsAttack)?horizontal:0;
+  const dy=canStep?vertical:0;
+  if(Math.abs(dx)>.05)h.face=Math.sign(dx);
+  const diagonal=1/Math.max(1,Math.hypot(dx,dy));
   const previousX=h.x;
   const previousY=h.y;
   if(!wantsAttack)moveHero(h,s.crates,dx*105*dt*diagonal,dy*69*dt*diagonal);

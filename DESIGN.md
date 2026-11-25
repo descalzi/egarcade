@@ -43,7 +43,7 @@ The episode title uses a serif display treatment drawn from the shop signs. Cont
 
 ## Layout
 
-The 16:9 canvas keeps its aspect ratio. The hero and play controls sit immediately below it. On coarse pointers, play opens a landscape stage with a directional pad and Jump and Attack over the game. Request native fullscreen and landscape lock first. Use a viewport-filling rotated stage if the browser cannot lock orientation. Pause and Exit fullscreen remain reachable. Spacing follows a 4 px grid.
+The 16:9 canvas keeps its aspect ratio. The hero and play controls sit immediately below it. On coarse pointers, play opens a landscape stage with an analogue joystick and round Jump and Attack buttons over the game. Request native fullscreen and landscape lock first. Use a viewport-filling rotated stage if the browser cannot lock orientation. Pause and Exit fullscreen remain reachable. Spacing follows a 4 px grid.
 
 ## Elevation & Depth
 
