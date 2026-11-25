@@ -86,8 +86,8 @@
       aria-label="The Benchy Cafe and Book Nook at dusk.">This game requires a browser with Canvas support.</canvas>
     <div class="deck">
       <fieldset class="heroes" aria-label="Choose your hero">
-        <label class="hero"><input type="radio" name="hero" value="rust" checked>Rust</label>
-        <label class="hero"><input type="radio" name="hero" value="teal">Teal</label>
+        <label class="hero"><input type="radio" name="hero" value="rust" checked>Lizzy</label>
+        <label class="hero"><input type="radio" name="hero" value="teal">George</label>
       </fieldset>
       <div class="actions">
         <button id="play" class="primary" disabled>Play encounter</button>
@@ -143,7 +143,9 @@ const kickDuration = .32;
 const kickWindup = .08;
 const kickExtension = .115;
 const landingDuration = .11;
-const pickupDuration = .4;
+const piePickupDuration = .4;
+const giftPickupDuration = .24;
+const heroNames = {rust:'Lizzy',teal:'George'};
 const crateHeight = 21;
 const sinkDuration = .9;
 const riseDuration = .9;
@@ -239,13 +241,8 @@ function actor(g,a,support=0){
     const row=a.look==='rust'?0:1;
     if(a.hurt>0){
       sprite(g,heroMoves,3,row,76,60,-38,-60);
-    }else if(a.pickup?.bend&&!a.swing){
-      const progress=1-a.pickup.time/pickupDuration;
-      if(progress>.12&&progress<.84){
-        sprite(g,extraPoses,row,0,76,70,-38,-70);
-      }else{
-        sprite(g,heroPoses,0,row,76,60,-38,-60);
-      }
+    }else if(pickupSquatActive(a)){
+      sprite(g,extraPoses,row,0,76,70,-38,-70);
     }else if(a.swing>.035){
       if(a.attackPose==='punch')sprite(g,heroPoses,2,row,76,60,-30,-60);
       else drawKick(g,a,row);
@@ -335,7 +332,7 @@ Promise.all(assetLoads).then(()=>{
   ready=true;
   playButton.disabled=false;
   saveStyle.disabled=false;
-  status.textContent='Choose Rust or Teal, then play.';
+  status.textContent='Choose Lizzy or George, then play.';
 }).catch(()=>{
   status.textContent='The encounter artwork could not load. Reload this file to try again.';
 });
@@ -376,7 +373,7 @@ function choose(next){
   for(const input of heroInputs)input.disabled=!!state;
   playButton.textContent=state?'Restart':'Play encounter';
   status.dataset.clear='false';
-  status.textContent=state?'Defeat the shopper zombie. Jump for the gold present or smash its crate.':'Choose Rust or Teal, then play.';
+  status.textContent=state?'Defeat the shopper zombie. Jump for the gold present or smash its crate.':'Choose Lizzy or George, then play.';
 }
 function setPaused(next){
   if(!state||paused===next)return;
@@ -469,10 +466,17 @@ function crateUnder(h,crates){
 function crateFloor(h,crates){
   return crateUnder(h,crates)?crateHeight:0;
 }
-function takePie(h,item){
+function pickupSquatActive(h){
+  if(!h.pickup?.bend||h.airborne||h.swing||h.hurt)return false;
+  const progress=1-h.pickup.time/h.pickup.duration;
+  return progress>.12&&progress<.84;
+}
+function takePickup(h,item,kind){
   item.taken=true;
-  h.pickup={x:item.x,y:item.y-item.height,time:pickupDuration,
-    bend:h.z===item.height};
+  const duration=kind==='pie'?piePickupDuration:giftPickupDuration;
+  if(kind==='pie'||!h.airborne&&h.pickup?.kind!=='pie'){
+    h.pickup={kind,x:item.x,y:item.y-item.height,time:duration,duration,bend:!h.airborne};
+  }
 }
 
 function strike(s, air) {
@@ -519,8 +523,9 @@ function update(dt) {
   h.comboTime=Math.max(0,h.comboTime-dt);
   const free=!h.hurt&&!h.swing;
   const wantsAttack=free&&pressed.has('attack')&&(!h.airborne||!h.kicked);
-  const dx=free?Number(down('right'))-Number(down('left')):0;
-  const dy=free?Number(down('down'))-Number(down('up')):0;
+  const canStep=free&&!pickupSquatActive(h);
+  const dx=(canStep||wantsAttack)?Number(down('right'))-Number(down('left')):0;
+  const dy=canStep?Number(down('down'))-Number(down('up')):0;
   if(dx)h.face=Math.sign(dx);
   const diagonal=dx&&dy?Math.SQRT1_2:1;
   const previousX=h.x;
@@ -622,14 +627,14 @@ function update(dt) {
   }
   for(const item of s.gifts){
     if(!item.taken&&close(h,item,12,9)&&h.z>=item.height&&h.z<item.height+15){
-      item.taken=true;
+      takePickup(h,item,'gift');
       s.effects.push({kind:item.gold?'gold':'gift',x:item.x,y:item.y-item.height,age:0,duration:.58});
       s.score+=item.gold?300:100;
     }
   }
   if(!s.pie.taken&&h.hearts<5&&h.z<10&&close(h,s.pie,12,9)){
     h.hearts++;
-    takePie(h,s.pie);
+    takePickup(h,s.pie,'pie');
   }
   if(!s.cleared&&s.enemies.every(z=>z.hp<=0&&!z.sink)){
     if(s.wave===1){
@@ -669,7 +674,7 @@ function drawReward(g,reward){
   g.restore();
 }
 function drawHealing(g,h){
-  const progress=1-h.pickup.time/pickupDuration;
+  const progress=1-h.pickup.time/h.pickup.duration;
   const motion=reducedMotion.matches?0:progress;
   const feet=h.y-h.z;
   g.save();
@@ -697,7 +702,7 @@ function hudPanel(g,x,y,w,h){
 function hud(g,hero,score){
   const x=8,y=19;
   hudPanel(g,5,5,124,33);
-  label(g,hero.look==='rust'?'RUST':'TEAL',10,15,9,hero.look==='rust'?'#f4b49a':'#a2e3d6');
+  label(g,heroNames[hero.look].toUpperCase(),10,15,9,hero.look==='rust'?'#f4b49a':'#a2e3d6');
   label(g,hero.hearts+'/5',107,15,9,'#f3e5d1');
   g.drawImage(healthFrame,0,0,8,16,x,y,8,16);
   g.drawImage(healthFrame,8,0,32,16,x+8,y,94,16);
@@ -705,7 +710,7 @@ function hud(g,hero,score){
   const low=hero.hearts<=2;
   const fill=low?'#db7461':'#68b98f';
   const highlight=low?'#ffd0a5':'#b1ebba';
-  const healing=!!hero.pickup;
+  const healing=hero.pickup?.kind==='pie';
   for(let i=0;i<5;i++){
     const left=x+7+i*20;
     const full=i<hero.hearts;
@@ -734,16 +739,16 @@ function drawEncounter(g,s){
     if(!reducedMotion.matches&&a.immune&&!a.hurt&&Math.floor(clock*4)%2)continue;
     const support=a.z>=crateHeight?crateUnder(a,s.crates):null;
     draws.push({y:support?support.y+1:a.y,draw:()=>{
-      if(a.pickup)drawHealing(g,a);
+      if(a.pickup?.kind==='pie')drawHealing(g,a);
       actor(g,a,support?crateHeight:0);
       if(a.tell)label(g,'!',a.x-2,a.y-64,12,'#ffcf76');
     }});
   }
   for(const entry of draws.sort((a,b)=>a.y-b.y))entry.draw();
   const h=s.hero;
-  if(h.pickup){
+  if(h.pickup?.kind==='pie'){
     const item=h.pickup;
-    const progress=1-item.time/pickupDuration;
+    const progress=1-item.time/item.duration;
     const targetX=h.x+12*h.face;
     const targetY=h.y-h.z-(item.bend?15:34);
     g.save();
