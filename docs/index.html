@@ -7,7 +7,7 @@
 <meta name="description" content="Free browser arcade games set in East Grinstead. Play the Benchy Cafe encounter from The Big Reveal.">
 <meta property="og:title" content="EG Arcade">
 <meta property="og:description" content="Free arcade games set in East Grinstead. Play The Big Reveal preview.">
-<meta property="og:image" content="https://descalzi.github.io/egarcade/media/big-reveal.webp">
+<meta property="og:image" content="https://descalzi.github.io/egarcade/media/big-reveal-poster.png">
 <title>EG Arcade · Free games from East Grinstead</title>
 <style>
 :root{color-scheme:dark;--bg:#17172b;--surface:#22243d;--line:#42415c;--text:#fff1dd;--muted:#c9bfd7;--amber:#ffd08a;--ink:#281c25;--gutter:clamp(16px,4vw,48px);accent-color:var(--amber);caret-color:var(--amber);scrollbar-color:#8889aa var(--bg)}
@@ -25,19 +25,27 @@ header .wrap,footer .wrap{display:flex;justify-content:space-between;align-items
 .brand{font:700 1.45rem/1 Georgia,serif;text-decoration:none}
 nav a{display:inline-flex;align-items:center;min-height:44px;color:var(--muted)}
 h1,h2{font-family:Georgia,serif;line-height:1.02;letter-spacing:-.035em;margin:0;text-wrap:balance}
-h1{font-size:clamp(2.75rem,7vw,6rem)}
+h1{font-size:clamp(2.75rem,6vw,5rem)}
 h2{font-size:clamp(1.9rem,4vw,3.2rem)}
 p{margin:0;max-width:64ch;text-wrap:pretty}
-.hero{padding-block:clamp(32px,5vw,64px) 0}
-.hero-copy{display:grid;gap:12px;padding-bottom:24px}
-.hero-copy p{color:var(--muted);font-size:clamp(1rem,2vw,1.2rem)}
+.hero{border-bottom:1px solid var(--line)}
+.hero picture{max-width:1120px;margin-inline:auto;border:0}
+.hero-copy{display:grid;gap:12px;padding-block:clamp(24px,4vw,44px)}
+@media(min-width:850px){
+  .hero-copy{grid-template-columns:minmax(0,1fr) max-content;align-items:center;column-gap:32px}
+  .hero-copy .play{grid-column:2;grid-row:1 / 3}
+  .hero-copy .preview{grid-column:1}
+}
+.hero-copy p{color:var(--text);font-size:clamp(1rem,2vw,1.2rem);max-width:49ch}
+.hero-copy .preview{font-size:1rem;color:var(--muted)}
 .play{display:inline-flex;width:max-content;min-height:48px;align-items:center;padding:8px 18px;background:var(--amber);color:var(--ink);font-weight:750;text-decoration:none;border-radius:6px}
 .play:hover{background:#ffe1ad}
 .play:active{background:#efb972}
 picture,img{display:block;width:100%;height:auto}
 picture{border:1px solid #66536b}
 .games{padding-block:clamp(36px,7vw,80px)}
-.games article{border-top:1px solid var(--line);padding-top:24px;margin-top:24px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:16px 32px}
+.games article{border-top:1px solid var(--line);padding-top:24px;margin-top:24px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);align-items:start;gap:24px 48px}
+figure{margin:0}figcaption{margin-top:8px;color:var(--muted);font-size:.875rem}
 h3{font:700 clamp(1.35rem,3vw,2.1rem)/1.15 Georgia,serif;margin:0 0 8px}
 .details{color:var(--muted)}
 .story{display:grid;gap:12px}
@@ -51,27 +59,34 @@ footer .wrap{padding-block:12px;flex-wrap:wrap}
 <a class="skip" href="#main">Skip to main content</a>
 <header id="top"><div class="wrap"><a class="brand" href="./" aria-label="EG Arcade home">EG Arcade</a><nav aria-label="Main"><a href="#games">Games</a></nav></div></header>
 <main id="main">
-<section class="hero wrap" aria-labelledby="featured">
-  <div class="hero-copy">
-    <h1 id="featured">The Big Reveal</h1>
-    <p>East Grinstead’s Christmas lights have gone out. Take the spare fuse and fight your way down the High Street before the big reveal.</p>
-    <a class="play" href="./play/">Play Now</a>
-    <p>Free browser game · Benchy Cafe preview</p>
-  </div>
+<section class="hero" aria-labelledby="featured">
   <picture>
-    <source media="(max-width: 640px)" srcset="media/big-reveal-small.webp">
-    <img src="media/big-reveal.webp" width="1200" height="675" fetchpriority="high" alt="Lizzy and George face a crowned zombie outside Benchy Cafe and the Book Nook at dusk.">
+    <source media="(max-width: 600px)" srcset="media/big-reveal-poster-small.png">
+    <img src="media/big-reveal-poster.png" width="1120" height="630" fetchpriority="high" alt="Lizzy holds the glowing spare fuse beside George as a zombie breaks through the High Street pavement.">
   </picture>
+  <div class="hero-copy wrap">
+    <h1 id="featured">The Big Reveal</h1>
+    <p>The Christmas lights have gone out. Help Lizzy or George carry the spare fuse down East Grinstead’s High Street and save the switch-on.</p>
+    <a class="play" href="./play/">Play Now</a>
+    <p class="preview">Free browser game · Benchy Cafe preview</p>
+  </div>
 </section>
 <section class="games wrap" id="games" aria-labelledby="games-title">
   <h2 id="games-title">Games from East Grinstead</h2>
   <article>
-    <div><h3>The Big Reveal</h3><p class="details">Arcade brawler · Free to play</p></div>
     <div class="story">
-      <p>Choose Lizzy or George. Dodge the Christmas shoppers, smash crates for presents, and grab a mince pie when you need health.</p>
-      <p class="details">The playable preview covers the Benchy Cafe encounter. The full story leads to the covered windows of Tree Frog and the Christmas lights switch-on.</p>
+      <h3>The Big Reveal</h3>
+      <p>Fight through two waves of Christmas shoppers outside Benchy Cafe. Smash crates for presents, jump for the gold gift, and grab a mince pie to recover health.</p>
+      <p class="details">The Benchy Cafe encounter is playable now. The full story leads to the covered windows of Tree Frog and the Christmas lights switch-on.</p>
       <a href="./play/">Play the Benchy Cafe encounter</a>
     </div>
+    <figure>
+      <picture>
+        <source media="(max-width: 640px)" srcset="media/big-reveal-small.webp">
+        <img src="media/big-reveal.webp" width="1200" height="675" loading="lazy" alt="Concept art showing Lizzy punching and George jump-kicking outside Benchy Cafe.">
+      </picture>
+      <figcaption>Gameplay concept for the Benchy Cafe encounter</figcaption>
+    </figure>
   </article>
 </section>
 </main>

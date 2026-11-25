@@ -31,7 +31,7 @@ spacing:
 
 ## Overview
 
-Experience mode, using the media-first composition of Gallery in [the design library](https://github.com/descalzi/uiux#108-gallery). The homepage introduces EG Arcade through the High Street artwork and a single Play Now action. Its games list can grow as episodes ship. The play page is an Experience surface where the illustrated street gives way to live play.
+Experience mode, using the media-first composition of Gallery in [the design library](https://github.com/descalzi/uiux#108-gallery). The homepage opens on full-width illustrated key art for the featured game and a single primary Play Now action. Gameplay imagery appears at a smaller scale alongside the feature copy. Its games list can grow as episodes ship. The play page is an Experience surface where the illustrated street gives way to live play.
 
 ## Colors
 
