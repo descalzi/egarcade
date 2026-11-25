@@ -10,7 +10,8 @@ Local players and arcade fans can try a short encounter on a laptop or a touch s
 
 | Surface | Mode | Primary action |
 | --- | --- | --- |
-| `docs/index.html` | Experience | Choose a hero and play the Benchy Cafe encounter |
+| `docs/index.html` | Persuade | Discover the free game series and open The Big Reveal |
+| `docs/play/index.html` | Experience | Choose a hero and play the Benchy Cafe encounter |
 
 ## Scope and assets
 

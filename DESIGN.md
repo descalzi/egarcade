@@ -31,7 +31,7 @@ spacing:
 
 ## Overview
 
-Experience mode, using the media-first composition of Gallery in [the design library](https://github.com/descalzi/uiux#108-gallery). The street fills the first viewport. The same pavement goes from illustrated title scene to live play when the player starts.
+Experience mode, using the media-first composition of Gallery in [the design library](https://github.com/descalzi/uiux#108-gallery). The homepage introduces EG Arcade through the High Street artwork and a single Play Now action. Its games list can grow as episodes ship. The play page is an Experience surface where the illustrated street gives way to live play.
 
 ## Colors
 
@@ -43,7 +43,7 @@ The episode title uses a serif display treatment drawn from the shop signs. Cont
 
 ## Layout
 
-The 16:9 canvas keeps its aspect ratio. The hero and play controls sit immediately below it. Touch controls appear on coarse pointers. Spacing follows a 4 px grid.
+The 16:9 canvas keeps its aspect ratio. The hero and play controls sit immediately below it. On coarse pointers, play opens a landscape stage with a directional pad and Jump and Attack over the game. Request native fullscreen and landscape lock first. Use a viewport-filling rotated stage if the browser cannot lock orientation. Pause and Exit fullscreen remain reachable. Spacing follows a 4 px grid.
 
 ## Elevation & Depth
 
