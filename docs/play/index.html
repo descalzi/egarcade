@@ -686,6 +686,7 @@ const sections=[
   {stage:1,place:'Benchy Cafe',art:'cafe',hint:'Jump for the gold present or smash its crate.',
     waves:[[[346,228,-1,true]], [[-42,240,1],[522,221,-1]]]},
   {stage:1,place:'Emma & Lou Interiors',art:'interiors',hint:'Collect a present and take a mince pie if you need it.',
+    scenery:[{kind:'postBox',x:198,y:216,halfWidth:18,halfDepth:10,height:96,hits:4,reward:750}],
     waves:[[[302,218,-1,true]]]},
   {stage:1,place:'Memorial Square',art:'square',hint:'Stay on the pavement and look for the Nutcracker beyond the memorial.',
     waves:[[[300,222,-1,true],[397,242,-1,true]],['nutcracker']]},
@@ -728,8 +729,10 @@ function newEncounter(look,section=0,hearts=5,score=0,entryScore=score){
     gifts:[{x:96,y:223,height:0},
       {x:200,y:201,height:crateHeight,gold:section===stageStart[sections[section].stage],crate:'gold'}],
     crates:[{id:'red',x:141,y:237,intact:true},{id:'gold',x:200,y:201,intact:true}],
+    scenery:(sections[section].scenery??[]).map(prop=>({...prop,intact:true})),
     pie:{x:275,y:207,height:0,taken:false}
   };
+  s.solids=s.crates.concat(s.scenery);
   spawnWave(s);
   return s;
 }
@@ -779,7 +782,7 @@ function hurtHero(s,direction){
   h.hurt=.24;
   h.swing=0;
   h.comboTime=0;
-  moveHero(h,s.crates,direction*11,0);
+  moveOnPavement(h,s.solids,direction*11,0);
   if(h.hearts>0)return;
   s.phase='gameOver';
   clearInput();
@@ -1186,25 +1189,61 @@ gameOverRestart.addEventListener('click',()=>{
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 const close=(a,b,x,y)=>Math.abs(a.x-b.x)<x&&Math.abs(a.y-b.y)<y;
 
-// Crate footprints are measured at their base in the pavement plane.
-function moveHero(h,crates,dx,dy){
-  let x=clamp(h.x+dx,16,464);
+// Solid footprints are measured at their base in the pavement plane.
+function moveOnPavement(h,solids,dx,dy,minX=16,maxX=464){
+  let x=clamp(h.x+dx,minX,maxX);
   let y=clamp(h.y+dy,189,253);
-  if(h.z<crateHeight){
-    for(const c of crates){
-      if(!c.intact)continue;
-      if(Math.abs(h.y-c.y)<10){
-        if(dx>0&&h.x<=c.x-17&&x>c.x-17)x=c.x-17;
-        if(dx<0&&h.x>=c.x+17&&x<c.x+17)x=c.x+17;
-      }
-      if(Math.abs(x-c.x)<17){
-        if(dy>0&&h.y<=c.y-10&&y>c.y-10)y=c.y-10;
-        if(dy<0&&h.y>=c.y+10&&y<c.y+10)y=c.y+10;
-      }
+  for(const prop of solids){
+    if(!prop.intact||h.z>=(prop.height??crateHeight))continue;
+    const {x:centreX,y:centreY,halfWidth=17,halfDepth=10}=prop;
+    if(Math.abs(h.y-centreY)<halfDepth){
+      if(dx>0&&h.x<=centreX-halfWidth&&x>centreX-halfWidth)x=centreX-halfWidth;
+      if(dx<0&&h.x>=centreX+halfWidth&&x<centreX+halfWidth)x=centreX+halfWidth;
+    }
+    if(Math.abs(x-centreX)<halfWidth){
+      if(dy>0&&h.y<=centreY-halfDepth&&y>centreY-halfDepth)y=centreY-halfDepth;
+      if(dy<0&&h.y>=centreY+halfDepth&&y<centreY+halfDepth)y=centreY+halfDepth;
     }
   }
   h.x=x;
   h.y=y;
+}
+function sceneryBetween(a,b,scenery){
+  return scenery.find(prop=>{
+    let start=0,end=1;
+    for(const [origin,distance,centre,radius] of [
+      [a.x,b.x-a.x,prop.x,prop.halfWidth],
+      [a.y,b.y-a.y,prop.y,prop.halfDepth]
+    ]){
+      if(!distance){
+        if(Math.abs(origin-centre)>=radius)return false;
+        continue;
+      }
+      const first=(centre-radius-origin)/distance;
+      const last=(centre+radius-origin)/distance;
+      start=Math.max(start,Math.min(first,last));
+      end=Math.min(end,Math.max(first,last));
+    }
+    return end>start;
+  });
+}
+function followShopper(z,h,scenery,blocker,dt){
+  let {x,y}=h;
+  if(blocker){
+    if(Math.abs(z.x-blocker.x)>=blocker.halfWidth){
+      x=z.x;
+      const side=z.y+h.y<2*blocker.y?-1:1;
+      y=blocker.y+side*(blocker.halfDepth+5);
+    }else{
+      const side=h.x<blocker.x?-1:1;
+      x=blocker.x+side*(blocker.halfWidth+5);
+      y=z.y;
+    }
+  }
+  const dx=clamp(x-z.x,-42*dt,42*dt);
+  if(dx)z.face=Math.sign(dx);
+  moveOnPavement(z,scenery,dx,clamp(y-z.y,-28*dt,28*dt),-60,540);
+  z.stride+=dt;
 }
 function crateUnder(h,crates){
   // The visible top is narrower than the collision footprint with body margin.
@@ -1226,10 +1265,19 @@ function takePickup(h,item,kind){
   }
 }
 
-function crateInKickReach(h,c,reach){
-  const offset=c.x-h.x;
-  return c.intact&&h.z<crateHeight+5&&close(h,c,reach,15)&&
+function propInKickReach(h,prop,reach){
+  const offset=prop.x-h.x;
+  return prop.intact&&h.z<(prop.height??crateHeight)+5&&close(h,prop,reach,15)&&
     (Math.abs(offset)<=8||offset*h.face>0);
+}
+const parcelDropTime=.42;
+function kickScenery(s,prop){
+  const h=s.hero;
+  effect(s,'hit',prop.x-h.face*9,prop.y-33);
+  if(!prop.hits||--prop.hits)return;
+  const side=h.x<prop.x?-1:1;
+  s.gifts.push({kind:'parcel',points:prop.reward,x:prop.x+side*31,y:prop.y+16,height:0,
+    fromX:prop.x,fromY:prop.y-54,drop:parcelDropTime});
 }
 function strike(s,attackPose) {
   const h=s.hero;
@@ -1240,23 +1288,27 @@ function strike(s,attackPose) {
   const inArc=target=>close(h,target,reach,13)&&(target.x-h.x)*h.face>=-4;
   if(!punch){
     for(const c of s.crates){
-      if(!crateInKickReach(h,c,reach))continue;
+      if(!propInKickReach(h,c,reach))continue;
       c.intact=false;
       effect(s,'break',c.x,c.y-12);
       const supported=s.gifts.find(item=>item.crate===c.id);
       if(supported)supported.height=0;
       else s.gifts.push({x:c.x+10*h.face,y:c.y,height:0});
     }
+    for(const prop of s.scenery){
+      if(propInKickReach(h,prop,reach))kickScenery(s,prop);
+    }
   }
   for(const zombie of s.enemies){
     if(zombie.hp<=0||zombie.rise!==null||!inArc(zombie)||h.z>43)continue;
     if(zombie.boss&&zombie.phase!=='recover')continue;
+    if(sceneryBetween(h,zombie,s.scenery))continue;
     effect(s,'hit',zombie.x,zombie.y-33);
     zombie.hp-=damage;
     zombie.stun=.24;
     zombie.tell=0;
     zombie.shove=0;
-    if(!zombie.boss)zombie.x=clamp(zombie.x+(air?17:7)*h.face,18,462);
+    if(!zombie.boss)moveOnPavement(zombie,s.scenery,(air?17:7)*h.face,0,18,462);
     if(zombie.hp<=0){
       zombie.sink=sinkDuration;
       if(zombie.boss)s.score+=500;
@@ -1299,7 +1351,7 @@ function update(dt) {
   const diagonal=1/Math.max(1,Math.hypot(dx,dy));
   const previousX=h.x;
   const previousY=h.y;
-  if(!wantsAttack)moveHero(h,s.crates,dx*105*dt*diagonal,dy*69*dt*diagonal);
+  if(!wantsAttack)moveOnPavement(h,s.solids,dx*105*dt*diagonal,dy*69*dt*diagonal);
   const moving=h.x!==previousX||h.y!==previousY;
   h.pose=moving?'walk':'idle';
   h.stride=moving?h.stride+dt:0;
@@ -1325,10 +1377,10 @@ function update(dt) {
     strike(s,h.attackPose);
   }
   if(wantsAttack&&(!air||!h.kicked)){
-    const crateKick=!air&&s.crates.some(c=>crateInKickReach(h,c,groundKickReach));
-    h.combo=air||crateKick?0:h.comboTime>0?h.combo%3+1:1;
-    h.comboTime=air||crateKick?0:.55;
-    h.attackPose=air?'airKick':crateKick||h.combo===3?'kick':'punch';
+    const propKick=!air&&s.solids.some(prop=>propInKickReach(h,prop,groundKickReach));
+    h.combo=air||propKick?0:h.comboTime>0?h.combo%3+1:1;
+    h.comboTime=air||propKick?0:.55;
+    h.attackPose=air?'airKick':propKick||h.combo===3?'kick':'punch';
     const punch=h.attackPose==='punch';
     h.swing=punch?swingDuration:kickDuration;
     h.kicked=air;
@@ -1366,11 +1418,12 @@ function update(dt) {
       z.stride=0;
       continue;
     }
+    const blocker=sceneryBetween(z,h,s.scenery);
     if(z.shove>0){
       const remaining=z.shove;
       z.shove=Math.max(0,z.shove-dt);
       // Resolve the shove once, at maximum extension.
-      if(remaining>shoveContact&&z.shove<=shoveContact&&close(z,h,shoveReach,10)&&
+      if(remaining>shoveContact&&z.shove<=shoveContact&&!blocker&&close(z,h,shoveReach,10)&&
         (h.x-z.x)*z.face>=-4&&h.z<13&&!h.immune){
         hurtHero(s,z.face);
         if(s.phase==='gameOver')return;
@@ -1379,22 +1432,25 @@ function update(dt) {
     }else if(z.tell>0){
       z.tell=Math.max(0,z.tell-dt);
       if(z.tell===0)z.shove=shoveDuration;
-    }else if(close(z,h,shoveStartRange,9)){
+    }else if(!blocker&&close(z,h,shoveStartRange,9)){
       z.face=z.x<h.x?1:-1;
       z.stride=0;
       z.tell=.36;
     }else{
-      z.face=z.x<h.x?1:-1;
-      z.x+=clamp(h.x-z.x,-42*dt,42*dt);
-      z.y+=clamp(h.y-z.y,-28*dt,28*dt);
-      z.stride+=dt;
+      followShopper(z,h,s.scenery,blocker,dt);
     }
   }
   for(const item of s.gifts){
+    if(item.drop>0){
+      item.drop=Math.max(0,item.drop-dt);
+      continue;
+    }
     if(!item.taken&&close(h,item,12,9)&&h.z>=item.height&&h.z<item.height+15){
       takePickup(h,item,'gift');
-      s.effects.push({kind:item.gold?'gold':'gift',x:item.x,y:item.y-item.height,age:0,duration:.58});
-      s.score+=item.gold?300:100;
+      const points=item.points??(item.gold?300:100);
+      s.effects.push({kind:item.kind==='parcel'?'parcel':item.gold?'gold':'gift',
+        points,x:item.x,y:item.y-item.height,age:0,duration:.58});
+      s.score+=points;
     }
   }
   if(!s.pie.taken&&h.hearts<5&&h.z<10&&close(h,s.pie,12,9)){
@@ -1430,6 +1486,33 @@ function scene(g,s){
     box(g,46,41,355,2,'#7b525b');
     label(g,'THE TREETOP FROG',160,35,14,'#ffe4b0');
   }
+}
+function drawPostBox(g,s){
+  // Redraw the atlas silhouette at the correct depth when a fighter passes behind it.
+  g.save();
+  g.beginPath();
+  g.moveTo(185,131);
+  for(const [x,y] of [[184,127],[188,123],[195,120],[203,120],[212,126],[212,132],
+    [209,134],[209,216],[206,218],[188,218],[186,215],[187,134]]){
+    g.lineTo(x,y);
+  }
+  g.closePath();
+  g.clip();
+  scene(g,s);
+  g.restore();
+}
+function drawParcel(g,item){
+  const progress=1-item.drop/parcelDropTime;
+  const x=item.fromX+(item.x-item.fromX)*progress;
+  const y=item.fromY+(item.y-item.fromY)*progress-20*Math.sin(Math.PI*progress);
+  if(!item.drop)groundShadow(g,x,y,10);
+  box(g,x-10,y-13,20,12,'#311e38');
+  box(g,x-8,y-12,16,9,'#e4ad6e');
+  box(g,x-8,y-12,16,2,'#ffdf9f');
+  box(g,x-8,y-5,16,2,'#a96d56');
+  box(g,x-2,y-12,2,9,'#963c57');
+  box(g,x-8,y-8,16,2,'#963c57');
+  box(g,x+4,y-11,3,3,'#fff0bb');
 }
 function drawBoss(g,boss){
   const design=bosses[boss.boss];
@@ -1559,7 +1642,7 @@ function drawReveal(g,s){
 function drawReward(g,reward){
   const progress=reward.age/reward.duration;
   const motion=reducedMotion.matches?0:progress;
-  const gold=reward.kind==='gold';
+  const gold=reward.kind!=='gift';
   g.save();
   g.globalAlpha=Math.min(1,(1-progress)*4);
   const radius=6+motion*12;
@@ -1570,7 +1653,7 @@ function drawReward(g,reward){
     box(g,x-2,y,5,1,gold?'#ffda79':'#ffe4aa');
     box(g,x,y-2,1,5,'#fff3ca');
   }
-  const amount=gold?'+300':'+100';
+  const amount='+'+reward.points;
   const y=reward.y-29-motion*15;
   label(g,amount,reward.x-12,y+1,10,'#2b2238');
   label(g,amount,reward.x-12,y,10,gold?'#ffd36e':'#fff0c6');
@@ -1644,12 +1727,18 @@ function drawEncounter(g,s){
     }
   }
   const draws=[];
+  for(const prop of s.scenery){
+    if(prop.kind==='postBox')draws.push({y:prop.y,draw:()=>drawPostBox(g,s)});
+  }
   for(const c of s.crates){
     if(c.intact)draws.push({y:c.y,draw:()=>crate(g,c.x,c.y)});
   }
   if(!s.pie.taken)draws.push({y:s.pie.y,draw:()=>pie(g,s.pie.x,s.pie.y)});
   for(const item of s.gifts){
-    if(!item.taken)draws.push({y:item.y,draw:()=>gift(g,item.x,item.y-item.height,item.gold)});
+    if(item.taken)continue;
+    if(item.kind==='parcel'){
+      draws.push({y:item.y,draw:()=>drawParcel(g,item)});
+    }else draws.push({y:item.y,draw:()=>gift(g,item.x,item.y-item.height,item.gold)});
   }
   for(const a of [s.hero,...s.enemies]){
     if(a.rise===-1||a.hp<=0&&!a.sink)continue;
@@ -1682,7 +1771,7 @@ function drawEncounter(g,s){
       if(progress<.8)drawStompRing(g,spark.x,spark.y,25+spread,13+spread/2,'#ffc888');
       continue;
     }
-    if(spark.kind==='gift'||spark.kind==='gold'){
+    if(spark.points){
       drawReward(g,spark);
       continue;
     }

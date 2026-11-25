@@ -39,6 +39,7 @@ All enemies are fictional zombies or animated decorations and shop dummies. Beat
 - Choose between **Lizzy**, in a rust shearling jacket and tan boots with a ponytail, and **George**, in a teal winter jacket and red scarf. Both share identical speed, jump, attack reach, timing, health and story.
 - Start with **five health segments**. A landed hit takes one segment, followed by a brief invulnerability window. Health carries across stages. At zero, Game Over offers a stage restart at full health with its entry score, or an exit to the title screen.
 - Wrapped presents are worth **100 points**. Place them on the pavement, on reachable ledges and in breakables. One optional gold present per stage is worth **300 points**. Both heroes squat for presents collected from a standing position. The present gives off sparks and shows its point value at the pickup spot.
+- A few solid street props can hide higher-value prizes. Repeated kicks make one parcel drop from a prop, while the prop stays in place. Use subtle hit feedback to reward curiosity without telegraphing the hiding spot.
 - Mince pies restore **one health segment**. Place them at fixed spots and leave them available at full health. The hero squats to collect a pie, then gains a brief mint glow. A segmented health bar and amber pixel score sit directly over the play area.
 
 ## Art and locations
