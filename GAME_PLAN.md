@@ -60,6 +60,10 @@ Use the rich HD pixel-art look of the concepts, with crisp silhouettes, blue win
 | The Dorset Arms | **The Dorset Oak** | Long pale frontage, four dormers, left carriage passage and the photo's low entrance canopy. |
 | Tree Frog | **The Treetop Frog** | Three arched display panes, scalloped awning, recessed side entrance, brick steps and column. |
 | Tudor stretch near 61 High Street | **Tudor High Street** | Broad tiled roof, irregular beams, projecting windows and recessed wooden gateway. |
+| Brick frontage near 64 High Street | | Red brick, three gabled dormers, white sash windows and a central black door above stone steps. Keep it between the timbered row and the Dorset Oak's carriage passage. |
+| Sackville College | **Sackville College** | Long stone frontage set back behind a lawn and low hedge, with tall chimneys, a central arched entrance, a path across the lawn and benches beside the pavement. |
+
+For the street expansion, use the 61 and 64 High Street views together to match the roofline and the transition from timber to brick and then to the pale pub frontage. Treat the latest view of 61 as a second angle on the existing Tudor segment. Use Sackville College as the point where the street opens up, with a wider view across the garden and a bare tree framing the scene.
 
 The current Google Street View captures are temporary architectural references. Replace them with original photos as they become available, starting with Benchy Cafe and its neighbours. Capture Heath Botanicals and Flint Owl Bakery before placing them on the route. Use the Dorset Arms photo’s low canopy for the pub’s production frontage.
 
