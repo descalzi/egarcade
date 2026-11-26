@@ -2,6 +2,8 @@
 <html lang="en-GB">
 <head>
 <meta charset="utf-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; script-src 'none'; style-src 'self'; img-src 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#17172b">
 <title>The Big Reveal · East Grinstead Arcade</title>
@@ -22,6 +24,7 @@
       <a class="arcade-play" href="../play/"><span class="arcade-play-icon" aria-hidden="true"></span>Play now</a>
     </div>
   <picture class="poster">
+  <source type="image/webp" srcset="../media/big-reveal-poster-small.webp 560w, ../media/big-reveal-poster.webp 1120w" sizes="(max-width: 600px) 92vw, (max-width: 1216px) 92vw, 1120px">
   <source media="(max-width: 600px)" srcset="../media/big-reveal-poster-small.png">
   <img src="../media/big-reveal-poster.png" width="1120" height="630" fetchpriority="high" alt="Lizzy holds a glowing spare fuse beside George on the High Street.">
 </picture>
