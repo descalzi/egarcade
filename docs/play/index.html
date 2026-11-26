@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; script-src 'sha256-CiXeqQzbJdEJQiAMSFbyUxFk2tDAnQnze4j0KRJ0xlQ='; style-src 'sha256-ChFQsP2E+uisPanoEufSqmOFHu8tWZMGfSfyXFE8o3g='; img-src 'self' data:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; script-src 'sha256-kW6R/UhYNZvKK+H87MJAdQKjZ7mjKBf04dQhN6dW5Ns='; style-src 'sha256-ChFQsP2E+uisPanoEufSqmOFHu8tWZMGfSfyXFE8o3g='; img-src 'self' data:">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#17172b">
 <link rel="icon" href="../favicon.ico" sizes="16x16 32x32 48x48" type="image/x-icon">
@@ -1165,7 +1165,12 @@ const soundCues={
     r(.073,.31,430,.27,120,.048);
   },
   creak(n,r){n(0,.23,245,.075,'triangle',125);r(.04,.27,690,.19,220);},
-  stomp(n,r){n(0,.24,91,.52,'sine',33);r(0,.16,550,.36,240);},
+  stomp(n,r){
+    n(0,.38,103,.79,'sine',39);
+    n(0,.17,176,.3,'triangle',70);
+    r(0,.12,920,.42,320,.003);
+    r(.031,.26,250,.32,92,.012);
+  },
   trolley(n,r){
     for(let i=0;i<4;i++){r(i*.065,.065,1670-i*150,.16,770);n(i*.065,.044,540+i*17,.07);}
   },
@@ -1193,10 +1198,19 @@ const winterMelody=[
   76,0,72,0,69,72,76,0, 77,0,76,72,69,0,72,0,
   79,0,76,0,72,0,67,72, 74,0,71,0,67,71,74,76
 ];
+// Tchaikovsky, Dance of the Sugar Plum Fairy (The Nutcracker, Op. 71a).
+// Opening phrase and bass adapted from RC Digital's public-domain MIDI.
+const plumLead=[
+  0,0,79,76,79,0,78,0,75,0,76,0,74,74,74,0,
+  73,73,73,0,72,72,72,0,71,76,72,76,71,0,0,0,
+  0,0,67,64,67,0,66,0,72,0,71,0,79,79,79,0,
+  78,78,78,0,76,76,76,0,75,78,76,78,75,0,0,0
+];
+const plumBass=[52,59,47,43,45,45,52,47,52,59,45,52,47,52,47,54];
 function setMusicTrack(track){
   if(musicTrack===track)return;
   // Keep the winter melody in phase when the combat arrangement joins or recedes.
-  if(musicBus&&track&&track!=='disco'&&musicTrack!=='disco'){
+  if(musicBus&&(track==='winter'||track==='fight')&&(musicTrack==='winter'||musicTrack==='fight')){
     musicTrack=track;
     return;
   }
@@ -1218,12 +1232,13 @@ function updateMusic(){
   let track;
   if(!document.hidden){
     if(state?.phase==='reveal')track='disco';
+    else if(state?.phase==='fight'&&state.enemies.some(enemy=>enemy.boss==='nutcracker'&&(enemy.hp>0||enemy.sink>0)))track='nutcracker';
     else if(state?.phase==='fight'&&!state.cleared&&missionBubble.hidden&&state.enemies.some(enemy=>enemy.hp>0&&enemy.rise!==-1))track='fight';
     else if(state?.phase==='fight'||state?.phase==='fuse'||state?.phase==='switch'||!characterSelect.hidden)track='winter';
   }
   setMusicTrack(track);
   if(!musicBus)return;
-  const interval=30/(track==='disco'?116:track==='fight'?112:94);
+  const interval=track==='nutcracker'?15/100:30/(track==='disco'?116:track==='fight'?112:94);
   if(nextMusicNote<audio.currentTime)nextMusicNote=audio.currentTime+.025;
   while(nextMusicNote<audio.currentTime+.14){
     const step=musicStep++,at=nextMusicNote;
@@ -1237,6 +1252,20 @@ function updateMusic(){
       }
       if(step%4===2)note(.10,175,.14,'triangle',130);
       note(.19,hz(chord[0]+(step%4===2?12:0)),.17,'triangle',undefined,.025);
+    }else if(track==='nutcracker'){
+      const beat=step%plumLead.length;
+      const lead=plumLead[beat];
+      if(lead){
+        const length=plumLead[(beat+1)%plumLead.length] ? .115 : .23;
+        note(length,hz(lead),.24,'triangle');
+        note(.11,hz(lead)*2.76,.067,'sine');
+      }
+      if(beat%4===0){
+        const bass=plumBass[beat/4];
+        note(.20,hz(bass),.18,'triangle');
+        note(.13,hz(bass-12),.10,'sine');
+      }
+      if(beat%8===4)rustle(musicBus,at,.08,580,.09,240);
     }else{
       const active=track==='fight';
       const lead=winterMelody[step%winterMelody.length];
