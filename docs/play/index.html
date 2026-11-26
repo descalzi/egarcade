@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; script-src 'sha256-WPo2vtWfunC41vUWW4t20IUF2gJtE07ll8MpQPx90NA='; style-src 'sha256-BngP74Lv8REku/2DFWW7U5ion1U3VunF5DJjT+el9zQ='; img-src 'self' data:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; script-src 'sha256-Q0iaa7Jj9Mu5vf2VphESZ0pwUP/VQAk6p8HVMMp2wzo='; style-src 'sha256-BngP74Lv8REku/2DFWW7U5ion1U3VunF5DJjT+el9zQ='; img-src 'self' data:">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#17172b">
 <meta name="description" content="Play the three-stage Christmas arcade adventure Grinstead Arcade: The Big Reveal.">
@@ -286,7 +286,7 @@
     <section id="mission-bubble" class="mission-bubble" aria-labelledby="mission-speaker" hidden>
       <div class="mission-card pixel-panel">
         <strong id="mission-speaker" class="mission-speaker"></strong>
-        <p id="mission-text"></p>
+        <p id="mission-text" aria-live="polite" aria-atomic="true"></p>
         <button id="mission-continue" class="mission-continue pixel-control" type="button" aria-describedby="mission-text">Continue</button>
       </div>
     </section>
@@ -532,7 +532,12 @@ const cabinet = document.querySelector('.screen');
 const missionBubble = document.querySelector('#mission-bubble');
 const missionSpeaker = document.querySelector('#mission-speaker');
 const missionText = document.querySelector('#mission-text');
-const openingLine='The Christmas lights have gone out. I’ve got a spare fuse from Robin Day’s Hardware. I need to reach the lighting switch in time for the Big Reveal!';
+const openingLines=[
+  'Oh no! The Christmas lights have gone out.',
+  'Luckily I got the last spare fuse from Robin Day’s Hardware.',
+  'I need to reach the lighting switch in time for the Big Reveal!'
+];
+let remainingMissionLines=[];
 const stageLines={
   2:'That power glitch might’ve brought the window displays to life. We’d better hurry and get the lights back on!',
   3:'It was the Disco King! He pulled the fuse. The lighting switch is by the Treetop Frog. I’m nearly there.'
@@ -954,7 +959,8 @@ function choose(next,showBriefing=false){
   screen.setAttribute('aria-label',state?'Playable pavement outside Benchy Cafe.':'The Benchy Cafe and Book Nook at dusk.');
   const briefing=!!state&&showBriefing;
   missionBubble.hidden=!briefing;
-  if(briefing)showMission(openingLine);
+  remainingMissionLines=[];
+  if(briefing)showMission(...openingLines);
   touch.hidden=!state||briefing;
   pauseButton.hidden=!state||briefing;
   mobilePause.hidden=briefing;
@@ -973,7 +979,8 @@ function choose(next,showBriefing=false){
   if(state&&!briefing)firstAnnouncement(state);
   else status.textContent='';
 }
-function showMission(text){
+function showMission(text,...nextLines){
+  remainingMissionLines=nextLines;
   missionBubble.dataset.hero=mode;
   missionBubble.style.setProperty('--speaker-x',100*state.hero.x/screen.width+'%');
   missionBubble.style.setProperty('--speaker-y',100*(state.hero.y-60)/screen.height+'%');
@@ -986,6 +993,10 @@ function showMission(text){
 }
 missionContinue.addEventListener('click',()=>{
   if(missionBubble.hidden)return;
+  if(remainingMissionLines.length){
+    missionText.textContent=remainingMissionLines.shift();
+    return;
+  }
   clearInput();
   missionBubble.hidden=true;
   touch.hidden=false;
