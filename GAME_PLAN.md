@@ -8,17 +8,17 @@ Launch the first episode straight from its title screen into character selection
 
 ## The Big Reveal
 
-On the evening of the Christmas lights and shop-window reveal, the Disco King, a silver-suited mannequin come to life, takes the fuse from the event's lighting control box. The Christmas lights go out, and his spell animates the window displays, including zombie figures dressed as Christmas shoppers. An event volunteer at Benchy Cafe hands the chosen hero a spare fuse. Get it to the control box by the finale shop and bring the reveal back on.
+On the evening of the Christmas lights and shop-window reveal, the Disco Diva, a disco mannequin come to life, takes the fuse from the event's lighting control box. The Christmas lights go out, and her spell animates the window displays, including zombie figures dressed as Christmas shoppers. An event volunteer at Benchy Cafe hands the chosen hero a spare fuse. Get it to the control box by the finale shop and bring the reveal back on.
 
 | Stage | Route and encounters | Boss |
 | --- | --- | --- |
 | **1. The Blackout** | Start at Benchy Cafe, between Farthing & Co. and The Book Nook. An easy pavement present, a ledge present and a breakable crate introduce the controls. Meet one Christmas-shopping zombie, then two approaching from opposite sides. | **The Nutcracker**, an oversized wooden window decoration. Its shadow shows where it will land. The leap targets the player’s position at takeoff, leaving time to dodge and counter. |
-| **2. Window Shopping** | Continue past the Tudor façades. Larger groups of the same shuffling zombies emerge from doorways and passages. The Dorset Oak's real carriage passage fits an encounter. | **The Last-Minute Shopper**, an oversized zombie with an overloaded trolley. Sidestep the rush and counter while it turns the trolley around. |
-| **3. One Last Number** | A short zombie encounter on the approach to The Treetop Frog. The crowd waits outside and the shop's three display bays stay completely covered. | **The Disco King** uses repeated dance sequences with a visible recovery pose. Beat him, fit the spare fuse and use the reveal switch. |
+| **2. Window Shopping** | Continue past the Tudor façades. Larger groups of the same shuffling zombies emerge from doorways and passages. The Dorset Oak's real carriage passage fits an encounter. | **The Last-Minute Shopper**, an oversized zombie with armfuls of shopping bags. Dodge the low swing or overhead slam, then counter while he recovers. On defeat his bags split and he saves one present. |
+| **3. One Last Number** | A short zombie encounter on the approach to The Treetop Frog. The crowd waits outside and the shop's three display bays stay completely covered. | **The Disco Diva** rolls two mirror balls before taking a breather. Sidestep or jump each ball. On defeat she slips, spins and takes a seated bow. Fit the spare fuse and use the reveal switch. |
 
 Aim for **10–15 minutes** on a first clear. Start with roughly 3–4 minutes at Benchy Cafe, 4–6 minutes on Tudor High Street and 3–5 minutes for the final approach, boss and reveal. Use playtests to tune these ranges.
 
-After the player fits the fuse and hits the switch, the crowd starts a short countdown. On zero, the lights come on, the cover lifts across all three window bays and the first beat of an original ’70s disco track lands. The DJ appears in the middle bay with one dancer on either side. The townsfolk dance in the street, the Disco King slips into the front row, and the score appears after the scene has had time to play. The countdown is a finale cue with no gameplay time limit.
+After the player fits the fuse and hits the switch, the crowd starts a short countdown. On zero, the lights come on, the cover lifts across all three window bays and the first beat of an original ’70s disco track lands. The DJ appears in the middle bay with one dancer on either side. The townsfolk dance in the street and the score appears after the scene has had time to play. The countdown is a finale cue with no gameplay time limit.
 
 ## Enemies
 
@@ -28,7 +28,7 @@ All enemies are fictional zombies or animated decorations and shop dummies. Beat
 | --- | --- |
 | **Shopper zombies** | All three stages. Slow enemies with a close-range grab. The Benchy Cafe slice uses these to teach the basic combo and lane movement. |
 | **Gingerbread figures** | First extra enemy to try, outside Flint & Feather once its route position is confirmed. They rush in groups and crumble in one hit. |
-| **Mannequin dancers** | Proposed for Stage 3. They block while posing and leave an opening when changing poses, previewing the Disco King’s timing. |
+| **Mannequin dancers** | Proposed for Stage 3. They block while posing and leave an opening when changing poses, previewing the Disco Diva’s timing. |
 | **Toy soldiers and snowmen** | Revisit after playtesting the slice. Soldiers could march and jab in formation to encourage flanking. Snowmen could throw snowballs to teach closing the distance. |
 
 ## Controls and scoring
@@ -84,7 +84,7 @@ The current Google Street View captures are temporary architectural references. 
 
 [Play The Big Reveal](https://descalzi.github.io/egarcade/play/) or download [the self-contained game](docs/play/index.html) and open it in a browser. The playtest covers all three stages in eight connected screens, from Benchy Cafe past Emma & Lou Interiors and the memorial, through Tudor High Street, Georgian Row and the Dorset Oak, then from Sackville College to the Treetop Frog. Clear each encounter and head right to the next screen.
 
-The Nutcracker jumps to the player’s position at takeoff and telegraphs the landing with its shadow, the Last-Minute Shopper tracks across the pavement before a trolley rush, and the Disco King attacks twice before his recovery. Heal with mince pies along the way. Health and score carry forward. Restarting from Game Over returns you to the current stage entry with five segments and its entry score. The last encounter ends with the fuse, the lighting switch, the countdown and the live window display. Music is generated in the browser from an original short disco sequence.
+The Nutcracker jumps to the player’s position at takeoff and telegraphs the landing with its shadow, the Last-Minute Shopper swings shopping bags, and the Disco Diva rolls mirror balls. Each boss has a dedicated fight theme, a defeat sequence, and a stage-clear fanfare. Heal with mince pies along the way. Health and score carry forward. Restarting from Game Over returns you to the current stage entry with five segments and its entry score. The last encounter ends with the fuse, the lighting switch, the countdown and the live window display. The browser synthesizes the music, including an arcade arrangement of Dance of the Sugar Plum Fairy and a separate disco track for the reveal.
 
 The playtest uses Canvas 2D, a fixed camera per screen, and first-pass pixel art for the new street sections, bosses and performers. The [Benchy Cafe style frame](art/mockups/benchy-cafe-style-frame.png) remains the art target for the episode. Check scene readability and landmark resemblance before refining the new artwork. On touch devices, the game uses the landscape view and overlaid joystick and buttons. The game uses CC0 impact and smoke effects from the [external assets](ExternalAssets/) under the [supplied licence notice](ExternalAssets/public-license.pdf).
 
