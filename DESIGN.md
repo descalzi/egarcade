@@ -31,7 +31,7 @@ spacing:
 
 ## Overview
 
-Experience mode, using the media-first composition of Gallery in [the design library](https://github.com/descalzi/uiux#108-gallery). The homepage opens on full-width illustrated key art for the featured game and a single primary Play Now action. Gameplay imagery appears at a smaller scale alongside the feature copy. Its games list can grow as episodes ship. Game pages are Experience surfaces. Each opens on its own illustrated poster with a large arcade Play button, then shows the available characters in dedicated standing portraits. The Play button, labels and portrait frames use the game's pixel lettering, copper trim and stepped edges. Choosing a character starts play.
+The homepage and feature pages use the media-first composition of Gallery in [the design library](https://github.com/descalzi/uiux#108-gallery). The arcade name and short introduction lead into a full-width poster for the current game, followed by an illustrated preview of the next one. The Big Reveal feature page leads with its cover, a single Play action, and a gallery with illustrated boss art and labelled gameplay captures. The playable cabinet uses Experience mode and presents the arcade Play button and dedicated character portraits before play.
 
 ## Colors
 
