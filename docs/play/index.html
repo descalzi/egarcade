@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; script-src 'sha256-Q0iaa7Jj9Mu5vf2VphESZ0pwUP/VQAk6p8HVMMp2wzo='; style-src 'sha256-BngP74Lv8REku/2DFWW7U5ion1U3VunF5DJjT+el9zQ='; img-src 'self' data:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; script-src 'sha256-zQYB5umpDgVAkRxsSCG+5bBoT4Ls3d6E1CHYxEnyaeE='; style-src 'sha256-ChFQsP2E+uisPanoEufSqmOFHu8tWZMGfSfyXFE8o3g='; img-src 'self' data:">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#17172b">
 <meta name="description" content="Play the three-stage Christmas arcade adventure Grinstead Arcade: The Big Reveal.">
@@ -244,6 +244,9 @@
   #game-over-restart { --face: #6c424a; --highlight: #87565c; }
   .screen:has(.game-over:not([hidden])) :is(.deck,.immersive-tools) { visibility: hidden; }
   .mission-continue { display: block; margin: 3px 0 0 auto; color: #ffe0a1; }
+  .sound-settings { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .sound-settings button { min-width: 100px; color: #ffe4b0; font-family: monospace; }
+  .sound-settings button[aria-pressed="false"] { --edge: #746583; color: #e1d4e7; }
   .select-back { margin-top: 16px; min-width: 88px; display: inline-grid; place-items: center; }
   .select-back .pixel-text { width: 46px; }
   .screen-reader-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
@@ -270,6 +273,10 @@
       <button type="button" class="character-option pixel-control" data-hero="teal">
         <canvas class="portrait" width="80" height="108" aria-hidden="true"></canvas><span class="screen-reader-only">George</span><canvas class="pixel-text" data-pixel="GEORGE" data-ink="#a2e3d6" aria-hidden="true"></canvas>
       </button>
+    </div>
+    <div class="sound-settings" role="group" aria-label="Sound settings">
+      <button type="button" class="pixel-control" data-sound="music" aria-pressed="true">Music on</button>
+      <button type="button" class="pixel-control" data-sound="fx" aria-pressed="true">FX on</button>
     </div>
     <button id="select-back" class="select-back pixel-control" type="button"><span class="screen-reader-only">Back</span><canvas class="pixel-text" data-pixel="BACK" aria-hidden="true"></canvas></button>
   </section>
@@ -778,7 +785,7 @@ function enterSection(section,hearts,score,entryScore){
 }
 function restartStory(){
   if(!state)return;
-  stopFinaleMusic();
+  setMusicTrack(undefined);
   if(paused)setPaused(false);
   if(state.phase==='complete'){
     choose(mode,true);
@@ -810,6 +817,7 @@ function hurtHero(s,direction){
   const h=s.hero;
   if(h.immune)return;
   effect(s,'hit',h.x,h.y-32);
+  playSound('hurt');
   h.hearts--;
   h.immune=.85;
   h.hurt=.24;
@@ -839,12 +847,14 @@ function updateBoss(s,z,dt){
     }
     z.phase='tell';
     z.time=design.tell;
-    if(!design.leap)z.bursts=design.bursts;
+    if(design.leap)playSound('creak');
+    else z.bursts=design.bursts;
     return;
   }
   if(z.phase==='tell'){
     if(z.boss==='shopper')z.y+=clamp(h.y-z.y,-40*dt,40*dt);
     if(!z.time){
+      if(z.boss==='shopper')playSound('trolley');
       z.phase=design.leap?'leap':'dash';
       z.time=design.leap??(z.boss==='disco'?.52:.64);
       if(design.leap){
@@ -865,6 +875,7 @@ function updateBoss(s,z,dt){
       z.phase='recover';
       z.time=design.recover;
       effect(s,'stomp',z.x,z.y);
+      playSound('stomp');
       const withinShadow=((h.x-z.x)/27)**2+((h.y-z.y)/14)**2<1;
       if(withinShadow&&h.z<14)hurtHero(s,h.x<z.x?-1:1);
     }
@@ -953,7 +964,7 @@ function clearInput(){
 function choose(next,showBriefing=false){
   clearInput();
   mode=next;
-  stopFinaleMusic();
+  setMusicTrack(undefined);
   paused=false;
   state=mode==='style'?null:newEncounter(mode);
   screen.setAttribute('aria-label',state?'Playable pavement outside Benchy Cafe.':'The Benchy Cafe and Book Nook at dusk.');
@@ -1012,8 +1023,8 @@ function setPaused(next){
   pauseButton.textContent=paused?'Resume':'Pause';
   setPixelButtonLabel(mobilePause,pauseButton.textContent);
   syncStoryControls();
-  if(discoBus&&discoAudio){
-    const action=paused?discoAudio.suspend():discoAudio.resume();
+  if(audio){
+    const action=paused?audio.suspend():audio.resume();
     action.catch(()=>{});
   }
 }
@@ -1021,8 +1032,195 @@ function setPaused(next){
 const storyAction=document.querySelector('#story-action');
 const storyResult=document.querySelector('#story-result');
 const resultScore=document.querySelector('#result-score');
-let discoAudio;
-let discoBus;
+const soundButtons=[...characterSelect.querySelectorAll('[data-sound]')];
+const soundSettings={music:true,fx:true};
+for(const kind of Object.keys(soundSettings)){
+  try{soundSettings[kind]=localStorage.getItem('egarcade-'+kind)!=='off';}catch{}
+}
+let audio;
+let musicGain;
+let fxGain;
+let noiseBuffer;
+let musicBus;
+let musicTrack;
+let musicStep=0;
+let nextMusicNote=0;
+const hz=midi=>440*2**((midi-69)/12);
+
+function syncSoundButtons(){
+  for(const button of soundButtons){
+    const kind=button.dataset.sound;
+    const label=kind==='music'?'Music':'FX';
+    button.setAttribute('aria-pressed',String(soundSettings[kind]));
+    button.setAttribute('aria-label',label);
+    button.textContent=label+(soundSettings[kind]?' on':' off');
+  }
+  if(audio){
+    musicGain.gain.setTargetAtTime(soundSettings.music?.24:0,audio.currentTime,.02);
+    fxGain.gain.setTargetAtTime(soundSettings.fx?.46:0,audio.currentTime,.02);
+  }
+}
+for(const button of soundButtons){
+  button.addEventListener('click',()=>{
+    const kind=button.dataset.sound;
+    soundSettings[kind]=!soundSettings[kind];
+    try{localStorage.setItem('egarcade-'+kind,soundSettings[kind]?'on':'off');}catch{}
+    unlockSound();
+    syncSoundButtons();
+    if(kind==='fx'&&soundSettings.fx)playSound('gift');
+  });
+}
+syncSoundButtons();
+
+function unlockSound(){
+  try{
+    const Audio=window.AudioContext||window.webkitAudioContext;
+    if(!Audio)return;
+    if(!audio){
+      audio=new Audio();
+      musicGain=audio.createGain();
+      musicGain.gain.value=soundSettings.music?.24:0;
+      fxGain=audio.createGain();
+      fxGain.gain.value=soundSettings.fx?.46:0;
+      const limiter=audio.createDynamicsCompressor();
+      limiter.threshold.value=-10;
+      musicGain.connect(limiter);
+      fxGain.connect(limiter);
+      limiter.connect(audio.destination);
+      noiseBuffer=audio.createBuffer(1,Math.ceil(audio.sampleRate*.4),audio.sampleRate);
+      const samples=noiseBuffer.getChannelData(0);
+      for(let i=0;i<samples.length;i++)samples[i]=Math.random()*2-1;
+    }
+    if(audio.state!=='running')audio.resume().catch(()=>{});
+  }catch{
+    // A device can play the game with audio unavailable.
+  }
+}
+
+function soundEnvelope(source,bus,at,duration,level,input=source){
+  const envelope=audio.createGain();
+  envelope.gain.setValueAtTime(.0001,at);
+  envelope.gain.exponentialRampToValueAtTime(level,at+.008);
+  envelope.gain.exponentialRampToValueAtTime(.0001,at+duration);
+  input.connect(envelope);
+  envelope.connect(bus);
+  source.start(at);
+  source.stop(at+duration);
+  source.onended=()=>{source.disconnect();if(input!==source)input.disconnect();envelope.disconnect();};
+}
+function tone(bus,at,duration,pitch,level,voice='triangle',slide=pitch){
+  const osc=audio.createOscillator();
+  osc.type=voice;
+  osc.frequency.setValueAtTime(pitch,at);
+  osc.frequency.exponentialRampToValueAtTime(slide,at+duration);
+  soundEnvelope(osc,bus,at,duration,level);
+}
+function rustle(bus,at,duration,pitch,level,endPitch=pitch){
+  const source=audio.createBufferSource();
+  source.buffer=noiseBuffer;
+  const filter=audio.createBiquadFilter();
+  filter.type='bandpass';
+  filter.frequency.setValueAtTime(pitch,at);
+  filter.frequency.exponentialRampToValueAtTime(endPitch,at+duration);
+  filter.Q.value=.85;
+  source.connect(filter);
+  soundEnvelope(source,bus,at,duration,level,filter);
+}
+
+const soundCues={
+  punch(n,r){n(0,.09,145,.29,'triangle',64);r(0,.06,1150,.23,580);},
+  kick(n,r){n(0,.15,112,.44,'sine',46);r(0,.09,760,.30,370);},
+  crate(n,r){r(0,.13,1480,.43,420);n(.012,.10,270,.13,'triangle',125);r(.075,.10,570,.17,260);},
+  post(n){n(0,.13,520,.17,'triangle',448);n(0,.06,1270,.08,'sine',1000);},
+  hurt(n,r){n(0,.15,166,.25,'triangle',77);r(0,.08,1100,.20,510);},
+  growl(n,r){n(0,.20,84,.075,'sawtooth',51);r(.01,.21,270,.13,150);},
+  creak(n,r){n(0,.23,245,.075,'triangle',125);r(.04,.27,690,.19,220);},
+  stomp(n,r){n(0,.24,91,.52,'sine',33);r(0,.16,550,.36,240);},
+  trolley(n,r){
+    for(let i=0;i<4;i++){r(i*.065,.065,1670-i*150,.16,770);n(i*.065,.044,540+i*17,.07);}
+  },
+  gift(n){n(0,.105,hz(76),.20);n(.065,.16,hz(81),.17);},
+  gold(n){[72,76,79,84].forEach((m,i)=>n(i*.065,.16,hz(m),.16));},
+  pie(n){n(0,.14,hz(64),.18,'sine');n(.085,.18,hz(69),.19,'sine');n(.17,.23,hz(73),.17,'sine');},
+  horn(n){[65,69,72,77].forEach((m,i)=>{n(i*.105,i===3?.34:.13,hz(m),.17,'triangle');n(i*.105,.085,hz(m+12),.05,'square');});},
+  switch(n,r){n(0,.05,330,.14,'triangle',150);r(0,.038,1700,.25,850);}
+};
+function playSound(kind){
+  if(!soundSettings.fx||audio?.state!=='running'||document.hidden)return;
+  const start=audio.currentTime+.008;
+  soundCues[kind](
+    (offset,duration,pitch,level,voice,slide)=>tone(fxGain,start+offset,duration,pitch,level,voice,slide),
+    (offset,duration,pitch,level,slide)=>rustle(fxGain,start+offset,duration,pitch,level,slide)
+  );
+}
+
+const winterChords=[[45,57,60,64],[41,57,60,65],[48,55,60,64],[43,55,59,62]];
+const winterMelody=[
+  76,0,72,0,69,72,76,0, 77,0,76,72,69,0,72,0,
+  79,0,76,0,72,0,67,72, 74,0,71,0,67,71,74,76
+];
+function setMusicTrack(track){
+  if(musicTrack===track)return;
+  // Keep the winter melody in phase when the combat arrangement joins or recedes.
+  if(musicBus&&track&&track!=='disco'&&musicTrack!=='disco'){
+    musicTrack=track;
+    return;
+  }
+  if(musicBus){
+    const old=musicBus;
+    old.gain.setTargetAtTime(0,audio.currentTime,.035);
+    setTimeout(()=>old.disconnect(),190);
+  }
+  musicBus=null;
+  musicTrack=track;
+  if(!track)return;
+  musicBus=audio.createGain();
+  musicBus.connect(musicGain);
+  musicStep=0;
+  nextMusicNote=audio.currentTime+.035;
+}
+function updateMusic(){
+  if(audio?.state!=='running'||paused)return;
+  let track;
+  if(!document.hidden){
+    if(state?.phase==='reveal')track='disco';
+    else if(state?.phase==='fight'&&!state.cleared&&missionBubble.hidden&&state.enemies.some(enemy=>enemy.hp>0&&enemy.rise!==-1))track='fight';
+    else if(state?.phase==='fight'||state?.phase==='fuse'||state?.phase==='switch'||!characterSelect.hidden)track='winter';
+  }
+  setMusicTrack(track);
+  if(!musicBus)return;
+  const interval=30/(track==='disco'?116:track==='fight'?112:94);
+  if(nextMusicNote<audio.currentTime)nextMusicNote=audio.currentTime+.025;
+  while(nextMusicNote<audio.currentTime+.14){
+    const step=musicStep++,at=nextMusicNote;
+    const chord=winterChords[Math.floor(step/8)%winterChords.length];
+    const note=(duration,pitch,level,voice,slide,offset=0)=>tone(musicBus,at+offset,duration,pitch,level,voice,slide);
+    if(track==='disco'){
+      if(step%2===0)note(.14,115,.52,'sine',42);
+      else{
+        note(.045,3810,.045,'square',2960);
+        for(const key of chord.slice(1))note(.19,hz(key+12),.035,'triangle');
+      }
+      if(step%4===2)note(.10,175,.14,'triangle',130);
+      note(.19,hz(chord[0]+(step%4===2?12:0)),.17,'triangle',undefined,.025);
+    }else{
+      const active=track==='fight';
+      const lead=winterMelody[step%winterMelody.length];
+      if(lead){
+        note(.23,hz(lead),active?.10:.13,'triangle');
+        note(.12,hz(lead+12),.025,'sine',undefined,.025);
+      }
+      if(step%4===0)note(.39,hz(chord[0]),active?.24:.11,'triangle');
+      if(step%4===2)note(.15,hz(chord[1]),active?.10:.07,'sine');
+      if(active){
+        if(step%4===0)note(.15,103,.27,'sine',47);
+        if(step%4===2)rustle(musicBus,at,.10,1200,.10,550);
+        if(step%2===1)rustle(musicBus,at,.035,5100,.05);
+      }
+    }
+    nextMusicNote+=interval;
+  }
+}
 
 function syncStoryControls(){
   const nearSwitch=state?.hero.x>=365;
@@ -1039,20 +1237,14 @@ function useStoryAction(){
   if(storyAction.hidden)return;
   clearInput();
   if(state.phase==='fuse'){
+    playSound('switch');
     state.phase='switch';
     syncStoryControls();
     status.textContent='Fuse fitted. Flip the switch when you’re ready.';
     return;
   }
-  try{
-    const Audio=window.AudioContext||window.webkitAudioContext;
-    if(Audio){
-      discoAudio??=new Audio();
-      discoAudio.resume().catch(()=>{});
-    }
-  }catch{
-    // The lights and dancers also play without audio.
-  }
+  unlockSound();
+  playSound('switch');
   state.phase='countdown';
   state.time=0;
   syncStoryControls();
@@ -1061,48 +1253,6 @@ function useStoryAction(){
 }
 storyAction.addEventListener('click',useStoryAction);
 storyResult.querySelector('button').addEventListener('click',restartStory);
-
-function stopFinaleMusic(){
-  discoBus?.disconnect();
-  discoBus=null;
-}
-function startFinaleMusic(){
-  if(!discoAudio||discoAudio.state!=='running')return;
-  stopFinaleMusic();
-  const audio=discoAudio;
-  const bus=discoBus=audio.createGain();
-  bus.gain.value=.24;
-  bus.connect(audio.destination);
-  const beat=60/116;
-  const start=audio.currentTime+.025;
-  function note(at,duration,pitch,level,voice,slide=pitch){
-    const osc=audio.createOscillator();
-    const envelope=audio.createGain();
-    osc.type=voice;
-    osc.frequency.setValueAtTime(pitch,at);
-    osc.frequency.exponentialRampToValueAtTime(slide,at+duration);
-    envelope.gain.setValueAtTime(.001,at);
-    envelope.gain.exponentialRampToValueAtTime(level,at+.01);
-    envelope.gain.exponentialRampToValueAtTime(.001,at+duration);
-    osc.connect(envelope);
-    envelope.connect(bus);
-    osc.start(at);
-    osc.stop(at+duration);
-  }
-  const hz=midi=>440*2**((midi-69)/12);
-  const chords=[[45,57,60,64],[41,57,60,65],[48,55,60,64],[43,55,59,62]];
-  for(let step=0;step<48;step++){
-    const at=start+step*beat/2;
-    const chord=chords[Math.floor(step/8)%chords.length];
-    if(step%2===0)note(at,.14,115,.52,'sine',42);
-    else{
-      note(at,.045,3810,.045,'square',2960);
-      for(const key of chord.slice(1))note(at,.19,hz(key+12),.035,'triangle');
-    }
-    if(step%4===2)note(at,.1,175,.14,'triangle',130);
-    note(at+.025,.19,hz(chord[0]+(step%4===2?12:0)),.17,'triangle');
-  }
-}
 
 function updateShow(s,dt){
   s.time+=dt;
@@ -1116,7 +1266,6 @@ function updateShow(s,dt){
     s.phase='reveal';
     s.time=0;
     status.textContent='The stage lights are on. The Big Reveal is saved!';
-    startFinaleMusic();
     return;
   }
   if(s.phase==='reveal'&&s.time>=9){
@@ -1177,7 +1326,17 @@ window.addEventListener('keydown',event=>{
 });
 window.addEventListener('keyup',event=>held.delete(event.code));
 window.addEventListener('blur',()=>setPaused(true));
-document.addEventListener('visibilitychange',()=>{if(document.hidden)setPaused(true);});
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){
+    setPaused(true);
+    if(!paused&&audio){
+      setMusicTrack(undefined);
+      audio.suspend().catch(()=>{});
+    }
+  }else if(!paused&&audio){
+    audio.resume().catch(()=>{});
+  }
+});
 for(const button of touch.querySelectorAll('[data-key]')){
   button.addEventListener('pointerdown',event=>{
     event.preventDefault();
@@ -1192,6 +1351,7 @@ for(const button of touch.querySelectorAll('[data-key]')){
     });
 }
 startButton.addEventListener('click',()=>{
+  unlockSound();
   titleScreen.hidden=true;
   characterSelect.hidden=false;
   characterButtons[0].focus();
@@ -1202,6 +1362,7 @@ document.querySelector('#select-back').addEventListener('click',()=>{
 });
 for(const button of characterButtons){
   button.addEventListener('click',()=>{
+    unlockSound();
     choose(button.dataset.hero,true);
     focusEncounter();
     if(touchPointer.matches)enterImmersive();
@@ -1319,6 +1480,7 @@ const hornDropTime=.42;
 function kickScenery(s,prop){
   const h=s.hero;
   effect(s,'hit',prop.x-h.face*9,prop.y-33);
+  playSound('post');
   if(!prop.hits||--prop.hits)return;
   const side=h.x<prop.x?-1:1;
   s.gifts.push({kind:'horn',points:prop.reward,x:prop.x+side*31,y:prop.y+16,height:0,
@@ -1336,6 +1498,7 @@ function strike(s,attackPose) {
       if(!crateInKickReach(h,c,reach))continue;
       c.intact=false;
       effect(s,'break',c.x,c.y-12);
+      playSound('crate');
       const supported=s.gifts.find(item=>item.crate===c.id);
       if(supported)supported.height=0;
       else s.gifts.push({x:c.x+10*h.face,y:c.y,height:0});
@@ -1344,10 +1507,12 @@ function strike(s,attackPose) {
       if(propInKickReach(h,prop,reach))kickScenery(s,prop);
     }
   }
+  let landed=false;
   for(const zombie of s.enemies){
     if(zombie.hp<=0||zombie.rise!==null||!inArc(zombie)||h.z>43)continue;
     if(zombie.boss&&zombie.phase!=='recover')continue;
     if(sceneryBetween(h,zombie,s.scenery))continue;
+    landed=true;
     effect(s,'hit',zombie.x,zombie.y-33);
     zombie.hp-=damage;
     zombie.stun=.24;
@@ -1361,6 +1526,7 @@ function strike(s,attackPose) {
       if(!zombie.boss)s.effects.push({kind:'gift',points,x:zombie.x,y:zombie.y,age:0,duration:.58});
     }
   }
+  if(landed)playSound(punch?'punch':'kick');
 }
 function update(dt) {
   if(!state||paused||!missionBubble.hidden)return;
@@ -1484,6 +1650,7 @@ function update(dt) {
       z.face=z.x<h.x?1:-1;
       z.stride=0;
       z.tell=.36;
+      playSound('growl');
     }else{
       followShopper(z,h,s.scenery,blocker,dt);
     }
@@ -1497,6 +1664,7 @@ function update(dt) {
       takePickup(h,item,'gift');
       const points=item.points??(item.gold?300:100);
       if(item.kind==='horn')status.textContent='Golden Post Horn found!';
+      playSound(item.kind==='horn'?'horn':item.gold?'gold':'gift');
       s.effects.push({kind:item.kind==='horn'?'horn':item.gold?'gold':'gift',
         points,x:item.x,y:item.y-item.height,age:0,duration:.58});
       s.score+=points;
@@ -1505,6 +1673,7 @@ function update(dt) {
   if(!s.pie.taken&&h.hearts<5&&h.z<10&&close(h,s.pie,12,9)){
     h.hearts++;
     takePickup(h,s.pie,'pie');
+    playSound('pie');
   }
   if(!s.cleared&&s.enemies.every(z=>z.hp<=0&&!z.sink))completeWave(s);
   if(s.cleared&&s.phase==='fight'&&h.x>=458){
@@ -1968,6 +2137,7 @@ function frame(now){
   lastFrame=now;
   if(!paused)clock+=dt;
   update(dt);
+  updateMusic();
   pressed.clear();
   if(state&&ready)drawEncounter(ctx,state);
   requestAnimationFrame(frame);
