@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; script-src 'sha256-/gMrZHDRAl1WojBwbxBRABwNSYZu8uKyw35tAxlMvTY='; style-src 'sha256-ChFQsP2E+uisPanoEufSqmOFHu8tWZMGfSfyXFE8o3g='; img-src 'self' data:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; script-src 'sha256-dPXLYazPnibckvzzbzuSCorXvIv+ScAENUvlPVMSV74='; style-src 'sha256-ChFQsP2E+uisPanoEufSqmOFHu8tWZMGfSfyXFE8o3g='; img-src 'self' data:">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#17172b">
 <link rel="icon" href="../favicon.ico" sizes="16x16 32x32 48x48" type="image/x-icon">
@@ -380,6 +380,9 @@ const sinkDuration = .9;
 const nutcrackerLidCloseTime=1.9;
 const mirrorBallRadius=10;
 const mirrorBallSpeed=163;
+const divaBallDropTime=2.68;
+const divaBallImpactTime=3.17;
+const divaBallSettleTime=4.03;
 const riseDuration = .9;
 const shoveDuration = .24;
 const shoveContact = .13;
@@ -746,8 +749,8 @@ const bosses={
     defeatSound:'nutcrackerGrumble',defeatCues:[[nutcrackerLidCloseTime,'toyBoxSnap']]},
   shopper:{name:'The Last-Minute Shopper',hp:11,tell:.72,recover:1.65,range:38,defeat:3.65,
     defeatSound:'shopperDisbelief',defeatCues:[[.7,'paperRip'],[1.38,'paperRip'],[2.04,'shopperThud']]},
-  disco:{name:'The Disco Diva',hp:13,tell:.62,recover:2.05,range:96,defeat:3.8,
-    defeatSound:'divaGasp',defeatCues:[[.6,'mirrorRoll'],[1.9,'divaBow']]}
+  disco:{name:'The Disco Diva',hp:13,tell:.62,recover:2.05,range:96,defeat:4.35,
+    defeatSound:'divaGasp',defeatCues:[[.6,'mirrorRoll'],[1.9,'divaBow'],[divaBallImpactTime,'divaBallDrop']]}
 };
 const firstSectionOf=stage=>sections.findIndex(section=>section.stage===stage);
 const defaultLayout={gift:[96,223],red:[141,237],raised:[200,201],pie:[275,207]};
@@ -1242,6 +1245,11 @@ const soundCues={
   mirrorBreak(n,r){r(0,.16,3160,.4,1240);n(0,.19,1540,.18,'triangle',540);},
   divaGasp(n,r,v){v(0,.26,245,398,1080,1380,.36);r(.03,.17,2010,.16,790);},
   divaBow(n){[72,69,65,60].forEach((pitch,i)=>n(i*.08,.22,hz(pitch),.19,'triangle'));},
+  divaBallDrop(n,r){
+    n(0,.23,186,.37,'triangle',67);
+    r(0,.14,1640,.26,390);
+    for(const [i,pitch] of [81,86,90,93].entries())n(.07+i*.039,.20,hz(pitch),.12,'sine');
+  },
   gift(n){n(0,.105,hz(76),.20);n(.065,.16,hz(81),.17);},
   gold(n){[72,76,79,84].forEach((m,i)=>n(i*.065,.16,hz(m),.16));},
   pie(n){
@@ -2007,10 +2015,12 @@ function drawBossPose(g,row,pose){
   sprite(g,arcadeBossMoves,pose,row,96,96,-48,-94,96,96);
 }
 function drawMirrorBall(g,ball){
-  const x=Math.round(ball.x),y=Math.round(ball.y)-mirrorBallRadius;
-  groundShadow(g,x,ball.y,11);
+  const {scale=1,lift=0}=ball;
+  const x=Math.round(ball.x),y=Math.round(ball.y-mirrorBallRadius*scale-lift);
+  groundShadow(g,x,ball.y,Math.round(11*scale));
   g.save();
   g.translate(x,y);
+  g.scale(scale,scale);
   const outline=[[-4,-10],[4,-10],[8,-7],[10,-3],[10,4],[7,8],[3,10],[-4,10],[-8,7],[-10,3],[-10,-4],[-7,-8]];
   shape(g,outline,'#3e2a55');
   g.beginPath();
@@ -2073,7 +2083,39 @@ function drawShopperDefeat(g,boss,time){
   }
   g.restore();
 }
+function divaFinalBall(boss,time){
+  const fall=clamp((time-divaBallDropTime)/(divaBallImpactTime-divaBallDropTime),0,1);
+  const settle=clamp((time-divaBallImpactTime)/(divaBallSettleTime-divaBallImpactTime),0,1);
+  const bounce=reducedMotion.matches?0:Math.abs(Math.sin(settle*Math.PI*2))*(1-settle)*14;
+  const x=clamp(boss.x-boss.face*15,22,458);
+  return {
+    x:x+(clamp(x+boss.face*14,22,458)-x)*settle,
+    y:boss.y+(Math.max(248,boss.y)-boss.y)*settle,
+    scale:1.9,lift:145*(1-fall*fall)+bounce,roll:settle*3
+  };
+}
+function drawDivaGlitter(g,boss,time){
+  const burst=clamp((time-divaBallImpactTime)/.45,0,1);
+  if(burst>=1)return;
+  const x=clamp(boss.x-boss.face*15,22,458),y=boss.y-24;
+  const radius=reducedMotion.matches?20:12+burst*29;
+  g.save();
+  g.globalAlpha=1-burst;
+  for(let i=0;i<11;i++){
+    const angle=i*Math.PI*2/11;
+    const px=x+Math.cos(angle)*radius,py=y+Math.sin(angle)*radius*.72;
+    const color=['#ffe7a7','#fff5ff','#f8a1ea','#a9e5e9'][i%4];
+    box(g,px-3,py,7,2,color);
+    if(i%2===0)box(g,px,py-3,1,7,color);
+  }
+  g.restore();
+}
 function drawDivaDefeat(g,boss,time){
+  if(time>=divaBallImpactTime){
+    drawMirrorBall(g,divaFinalBall(boss,time));
+    drawDivaGlitter(g,boss,time);
+    return;
+  }
   const motion=!reducedMotion.matches;
   const spin=clamp((time-.65)/1.23,0,1);
   const bow=clamp((time-1.88)/.48,0,1);
@@ -2083,9 +2125,12 @@ function drawDivaDefeat(g,boss,time){
   g.globalAlpha*=light;
   shape(g,[[x-9,74],[x+9,74],[x+43,y+6],[x-43,y+6]],'#f7cbf4');
   g.restore();
-  if(time>.59&&time<2.85){
-    const distance=clamp((time-.59)/1.7,0,1);
-    drawMirrorBall(g,{x:x+boss.face*(20+distance*42),y:y+5,roll:distance*8});
+  if(time>.59&&time<divaBallDropTime){
+    const distance=clamp((time-.59)/1.85,0,1);
+    g.save();
+    g.globalAlpha=clamp((divaBallDropTime-time)/.28,0,1);
+    drawMirrorBall(g,{x:x+boss.face*(20+distance*49),y:y+5,roll:distance*8});
+    g.restore();
   }
   g.save();
   g.translate(x,y);
@@ -2099,6 +2144,7 @@ function drawDivaDefeat(g,boss,time){
     drawBossPose(g,1,3);
   }
   g.restore();
+  if(time>=divaBallDropTime)drawMirrorBall(g,divaFinalBall(boss,time));
 }
 function drawBoss(g,boss){
   const design=bosses[boss.boss];
@@ -2108,7 +2154,7 @@ function drawBoss(g,boss){
       return;
     }
     const time=design.defeat-boss.sink;
-    groundShadow(g,boss.x,boss.y,24);
+    if(boss.boss==='shopper'||time<divaBallImpactTime)groundShadow(g,boss.x,boss.y,24);
     if(boss.boss==='shopper')drawShopperDefeat(g,boss,time);
     else drawDivaDefeat(g,boss,time);
     return;
@@ -2254,6 +2300,8 @@ function drawReveal(g,s){
     box(g,x-12,y-(reach?23:13),5,15,jacket);
     box(g,x+7,y-(reach?13:23),5,15,jacket);
   }
+  const diva=s.enemies.find(boss=>boss.boss==='disco'&&boss.hp<=0);
+  if(diva)drawMirrorBall(g,divaFinalBall(diva,divaBallSettleTime));
   g.restore();
 }
 
