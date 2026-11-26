@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; script-src 'sha256-zQSCsLWIl8KYKqQl80JRbPlYzTwjCU/rq3ofBx1umao='; style-src 'sha256-ChFQsP2E+uisPanoEufSqmOFHu8tWZMGfSfyXFE8o3g='; img-src 'self' data:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; script-src 'sha256-/gMrZHDRAl1WojBwbxBRABwNSYZu8uKyw35tAxlMvTY='; style-src 'sha256-ChFQsP2E+uisPanoEufSqmOFHu8tWZMGfSfyXFE8o3g='; img-src 'self' data:">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#17172b">
 <link rel="icon" href="../favicon.ico" sizes="16x16 32x32 48x48" type="image/x-icon">
@@ -1949,12 +1949,11 @@ function drawNutcrackerDefeat(g,boss){
   const fold=clamp((time-.63)/1.05,0,1);
   const lidStart=1.68;
   const closeLid=clamp((time-lidStart)/(nutcrackerLidCloseTime-lidStart),0,1);
+  const settle=clamp((time-nutcrackerLidCloseTime)/.42,0,1);
+  const hop=motion?Math.round(Math.abs(Math.sin(settle*Math.PI*2))*(1-settle)*3):0;
   const boxX=Math.round(x)-29;
-  const boxY=Math.round(y)-24;
-  const fade=clamp((time-2.8)/.45,0,1);
+  const boxY=Math.round(y)-24-hop;
   groundShadow(g,x,y,24);
-  g.save();
-  g.globalAlpha=1-fade;
 
   if(time>.48&&closeLid<1){
     const lidHeight=Math.max(1,Math.round(16*(1-closeLid)));
@@ -2003,7 +2002,6 @@ function drawNutcrackerDefeat(g,boss){
       box(g,x+side*(33+pop*10),y-22-pop*5,2,3,'#fff1bd');
     }
   }
-  g.restore();
 }
 function drawBossPose(g,row,pose){
   sprite(g,arcadeBossMoves,pose,row,96,96,-48,-94,96,96);
@@ -2104,18 +2102,15 @@ function drawDivaDefeat(g,boss,time){
 }
 function drawBoss(g,boss){
   const design=bosses[boss.boss];
-  if(boss.sink){
+  if(boss.hp<=0){
     if(design.leap){
       drawNutcrackerDefeat(g,boss);
       return;
     }
     const time=design.defeat-boss.sink;
-    g.save();
-    g.globalAlpha=clamp(boss.sink/.38,0,1);
     groundShadow(g,boss.x,boss.y,24);
     if(boss.boss==='shopper')drawShopperDefeat(g,boss,time);
     else drawDivaDefeat(g,boss,time);
-    g.restore();
     return;
   }
   const motion=!reducedMotion.matches;
@@ -2365,7 +2360,7 @@ function drawEncounter(g,s){
   }
   for(const ball of s.mirrorBalls)draws.push({y:ball.y,draw:()=>drawMirrorBall(g,ball)});
   for(const a of [s.hero,...s.enemies]){
-    if(a.rise===-1||a.hp<=0&&!a.sink)continue;
+    if(a.rise===-1||(!a.boss&&a.hp<=0&&!a.sink))continue;
     if(!reducedMotion.matches&&a.immune&&!a.hurt&&Math.floor(clock*4)%2)continue;
     const support=a.z>=crateHeight?crateUnder(a,s.crates):null;
     draws.push({y:support?support.y+1:a.y,draw:()=>{
