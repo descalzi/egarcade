@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; script-src 'sha256-zQYB5umpDgVAkRxsSCG+5bBoT4Ls3d6E1CHYxEnyaeE='; style-src 'sha256-ChFQsP2E+uisPanoEufSqmOFHu8tWZMGfSfyXFE8o3g='; img-src 'self' data:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; script-src 'sha256-CiXeqQzbJdEJQiAMSFbyUxFk2tDAnQnze4j0KRJ0xlQ='; style-src 'sha256-ChFQsP2E+uisPanoEufSqmOFHu8tWZMGfSfyXFE8o3g='; img-src 'self' data:">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#17172b">
 <link rel="icon" href="../favicon.ico" sizes="16x16 32x32 48x48" type="image/x-icon">
@@ -1098,10 +1098,10 @@ function unlockSound(){
   }
 }
 
-function soundEnvelope(source,bus,at,duration,level,input=source){
+function soundEnvelope(source,bus,at,duration,level,input=source,attack=.008){
   const envelope=audio.createGain();
   envelope.gain.setValueAtTime(.0001,at);
-  envelope.gain.exponentialRampToValueAtTime(level,at+.008);
+  envelope.gain.exponentialRampToValueAtTime(level,at+attack);
   envelope.gain.exponentialRampToValueAtTime(.0001,at+duration);
   input.connect(envelope);
   envelope.connect(bus);
@@ -1116,25 +1116,54 @@ function tone(bus,at,duration,pitch,level,voice='triangle',slide=pitch){
   osc.frequency.exponentialRampToValueAtTime(slide,at+duration);
   soundEnvelope(osc,bus,at,duration,level);
 }
-function rustle(bus,at,duration,pitch,level,endPitch=pitch){
+function rustle(bus,at,duration,pitch,level,endPitch=pitch,attack=.008){
   const source=audio.createBufferSource();
   source.buffer=noiseBuffer;
+  const filter=bandpass(source,at,duration,pitch,endPitch,.85);
+  soundEnvelope(source,bus,at,duration,level,filter,attack);
+}
+function voiceSweep(bus,at,duration,pitch,endPitch,formant,endFormant,level){
+  const source=audio.createOscillator();
+  source.type='sawtooth';
+  source.frequency.setValueAtTime(pitch,at);
+  source.frequency.exponentialRampToValueAtTime(endPitch,at+duration);
+  const filter=bandpass(source,at,duration,formant,endFormant,3.2);
+  soundEnvelope(source,bus,at,duration,level,filter,.015);
+}
+function bandpass(source,at,duration,pitch,endPitch,resonance){
   const filter=audio.createBiquadFilter();
   filter.type='bandpass';
   filter.frequency.setValueAtTime(pitch,at);
   filter.frequency.exponentialRampToValueAtTime(endPitch,at+duration);
-  filter.Q.value=.85;
+  filter.Q.value=resonance;
   source.connect(filter);
-  soundEnvelope(source,bus,at,duration,level,filter);
+  return filter;
 }
 
 const soundCues={
-  punch(n,r){n(0,.09,145,.29,'triangle',64);r(0,.06,1150,.23,580);},
-  kick(n,r){n(0,.15,112,.44,'sine',46);r(0,.09,760,.30,370);},
-  crate(n,r){r(0,.13,1480,.43,420);n(.012,.10,270,.13,'triangle',125);r(.075,.10,570,.17,260);},
+  jump(n,r){r(0,.19,560,.33,4100,.045);r(.035,.14,1350,.20,4800,.036);},
+  punch(n,r,v){v(0,.105,157,116,650,400,.23);r(.006,.12,1500,.23,630,.024);},
+  kick(n,r,v){v(0,.15,140,90,740,420,.25);r(.014,.17,1130,.29,420,.031);},
+  impact(n,r){n(0,.095,127,.24,'sine',52);r(0,.065,900,.12,390);},
+  crate(n,r){
+    r(0,.12,2250,.51,520,.003);
+    n(0,.098,224,.21,'triangle',104);
+    r(.021,.062,3300,.34,1180,.003);
+    r(.056,.093,1490,.31,460,.004);
+    r(.104,.088,920,.19,365,.004);
+  },
   post(n){n(0,.13,520,.17,'triangle',448);n(0,.06,1270,.08,'sine',1000);},
-  hurt(n,r){n(0,.15,166,.25,'triangle',77);r(0,.08,1100,.20,510);},
+  hurt(n,r,v){
+    v(0,.22,226,134,830,365,.45);
+    v(.004,.18,226,147,1470,935,.17);
+    r(.106,.095,2750,.18,1680,.015);
+  },
   growl(n,r){n(0,.20,84,.075,'sawtooth',51);r(.01,.21,270,.13,150);},
+  defeat(n,r,v){
+    v(.04,.32,87,43,490,225,.27);
+    v(.055,.27,92,48,640,280,.14);
+    r(.073,.31,430,.27,120,.048);
+  },
   creak(n,r){n(0,.23,245,.075,'triangle',125);r(.04,.27,690,.19,220);},
   stomp(n,r){n(0,.24,91,.52,'sine',33);r(0,.16,550,.36,240);},
   trolley(n,r){
@@ -1142,7 +1171,10 @@ const soundCues={
   },
   gift(n){n(0,.105,hz(76),.20);n(.065,.16,hz(81),.17);},
   gold(n){[72,76,79,84].forEach((m,i)=>n(i*.065,.16,hz(m),.16));},
-  pie(n){n(0,.14,hz(64),.18,'sine');n(.085,.18,hz(69),.19,'sine');n(.17,.23,hz(73),.17,'sine');},
+  pie(n){
+    [77,81,84,89].forEach((m,i)=>n(i*.055,i===3?.23:.11,hz(m),.23,'triangle'));
+    n(.165,.19,hz(84),.10,'sine');
+  },
   horn(n){[65,69,72,77].forEach((m,i)=>{n(i*.105,i===3?.34:.13,hz(m),.17,'triangle');n(i*.105,.085,hz(m+12),.05,'square');});},
   switch(n,r){n(0,.05,330,.14,'triangle',150);r(0,.038,1700,.25,850);}
 };
@@ -1151,7 +1183,8 @@ function playSound(kind){
   const start=audio.currentTime+.008;
   soundCues[kind](
     (offset,duration,pitch,level,voice,slide)=>tone(fxGain,start+offset,duration,pitch,level,voice,slide),
-    (offset,duration,pitch,level,slide)=>rustle(fxGain,start+offset,duration,pitch,level,slide)
+    (offset,duration,pitch,level,slide,attack)=>rustle(fxGain,start+offset,duration,pitch,level,slide,attack),
+    (offset,duration,pitch,slide,formant,endFormant,level)=>voiceSweep(fxGain,start+offset,duration,pitch,slide,formant,endFormant,level)
   );
 }
 
@@ -1524,10 +1557,13 @@ function strike(s,attackPose) {
       zombie.sink=zombie.boss==='nutcracker'?nutcrackerDefeatDuration:sinkDuration;
       const points=zombie.boss?500:50;
       s.score+=points;
-      if(!zombie.boss)s.effects.push({kind:'gift',points,x:zombie.x,y:zombie.y,age:0,duration:.58});
+      if(!zombie.boss){
+        s.effects.push({kind:'gift',points,x:zombie.x,y:zombie.y,age:0,duration:.58});
+        playSound('defeat');
+      }
     }
   }
-  if(landed)playSound(punch?'punch':'kick');
+  if(landed)playSound('impact');
 }
 function update(dt) {
   if(!state||paused||!missionBubble.hidden)return;
@@ -1573,6 +1609,7 @@ function update(dt) {
   const floor=h.z>=crateHeight?crateFloor(h,s.crates):0;
   if(pressed.has('jump')&&h.z===floor&&h.vz===0&&free){
     h.vz=185;
+    playSound('jump');
     h.kicked=false;
     h.landing=0;
   }
@@ -1598,6 +1635,7 @@ function update(dt) {
     h.attackPose=air?'airKick':propKick||h.combo===3?'kick':'punch';
     const punch=h.attackPose==='punch';
     h.swing=punch?swingDuration:kickDuration;
+    playSound(punch?'punch':'kick');
     h.kicked=air;
     if(punch)strike(s,h.attackPose);
   }
