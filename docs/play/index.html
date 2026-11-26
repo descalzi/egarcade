@@ -1668,11 +1668,15 @@ function drawLandingShadow(g,boss,hero){
   const progress=windingUp?1-boss.time/design.tell:1-boss.time/design.leap;
   const width=reducedMotion.matches?27:windingUp?18+6*progress:24+3*progress;
   g.save();
-  g.fillStyle='#1a1025';
-  g.globalAlpha=windingUp?.56:.8;
-  g.beginPath();
-  g.ellipse(Math.round(x),Math.round(y),width,width*14/27,0,0,Math.PI*2);
-  g.fill();
+  g.translate(Math.round(x),Math.round(y));
+  g.scale(1,14/27);
+  const shadow=g.createRadialGradient(0,0,0,0,0,width);
+  shadow.addColorStop(0,'#1a1025');
+  shadow.addColorStop(.42,'#1a1025');
+  shadow.addColorStop(1,'#1a102500');
+  g.fillStyle=shadow;
+  g.globalAlpha=windingUp?.32:.48;
+  g.fillRect(-width,-width,width*2,width*2);
   g.restore();
 }
 function drawStageOverlay(g,s){
