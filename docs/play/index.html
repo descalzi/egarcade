@@ -98,6 +98,11 @@
     --stick-size: clamp(74px, 18vmin, 104px);
     --button-size: clamp(50px, 14vmin, 66px);
   }
+  .mission-bubble:not([hidden]) ~ #touch {
+    z-index: 2; top: 0; justify-content: flex-end;
+  }
+  .mission-bubble:not([hidden]) ~ #touch .touch-group { align-self: center; }
+  .mission-bubble:not([hidden]) ~ #touch #joystick { display: none; }
   #joystick {
     display: grid; place-items: center; pointer-events: auto; touch-action: none;
     width: var(--stick-size); height: var(--stick-size); border-radius: 50%;
@@ -220,7 +225,7 @@
     position: relative; display: grid; grid-template-columns: minmax(0,1fr) auto;
     align-items: end; gap: 2px clamp(5px,2cqw,18px);
     width: 100%; padding: clamp(4px,1.1cqw,12px) clamp(8px,1.8cqw,18px);
-    --face: #20172df5;
+    background: #20172df5;
   }
   .mission-speaker {
     grid-column: 1; color: var(--edge); text-transform: uppercase;
@@ -251,6 +256,7 @@
     padding: 4px clamp(6px,1.5cqw,13px);
     font-size: clamp(.69rem,1.9cqw,1rem);
   }
+  .mission-continue:focus-visible { outline: none; }
   .story-action,.story-result { position: absolute; z-index: 1; left: 50%; transform: translateX(-50%); }
   .story-action { top: 34%; white-space: nowrap; color: #ffe8b4; }
   .story-action:active:not(:disabled) { transform: translate(-50%,2px); }
@@ -317,7 +323,7 @@
     <section id="mission-bubble" class="mission-bubble" role="dialog" aria-modal="true"
       aria-labelledby="mission-speaker" aria-describedby="mission-text" hidden>
       <img class="mission-art" id="mission-art" alt="">
-      <div class="mission-card pixel-panel">
+      <div class="mission-card">
         <strong id="mission-speaker" class="mission-speaker"></strong>
         <p id="mission-text" aria-live="polite" aria-atomic="true"></p>
         <button id="mission-continue" class="mission-continue pixel-control" type="button" aria-describedby="mission-text">Continue</button>
@@ -1453,7 +1459,7 @@ function syncStoryControls(){
   if(canUseSwitch)storyAction.textContent=state.phase==='fuse'?'Fit spare fuse':'Flip the switch';
   storyResult.hidden=state?.phase!=='complete';
   gameOver.hidden=state?.phase!=='gameOver';
-  touch.hidden=!state||paused||!missionBubble.hidden||['countdown','reveal','complete','gameOver'].includes(state.phase);
+  touch.hidden=!state||paused||['countdown','reveal','complete','gameOver'].includes(state.phase);
   mobileReplay.hidden=!state||!(paused||state.phase==='complete');
   setPixelButtonLabel(mobileReplay,state?.phase==='complete'?'Play again':'Restart stage');
 }
@@ -1504,11 +1510,16 @@ function updateShow(s,dt){
 }
 
 function press(code){
-  if(controls.get(code)==='attack'&&!storyAction.hidden){
+  if(!missionBubble.hidden){
+    missionContinue.click();
+    return;
+  }
+  const action=controls.get(code);
+  if(action==='attack'&&!storyAction.hidden){
     useStoryAction();
     return;
   }
-  if(!held.has(code))pressed.add(controls.get(code));
+  if(!held.has(code))pressed.add(action);
   held.add(code);
 }
 function down(action){
@@ -1534,10 +1545,12 @@ window.addEventListener('keydown',event=>{
     }
     return;
   }
-  if(!missionBubble.hidden&&['Tab','Enter','Space','KeyJ'].includes(event.code)){
+  const action=controls.get(event.code);
+  const isAttackOrJump=action==='attack'||action==='jump';
+  if(!missionBubble.hidden&&(event.code==='Tab'||event.key==='Enter'||isAttackOrJump)){
     event.preventDefault();
     if(event.code==='Tab')missionContinue.focus();
-    else if(!event.repeat)missionContinue.click();
+    else if(!event.repeat)press(event.code);
     return;
   }
   if(event.code==='Escape'){
@@ -1551,7 +1564,7 @@ window.addEventListener('keydown',event=>{
   if(paused||!missionBubble.hidden||!controls.has(event.code))return;
   if(event.target.closest?.('input, button, a')&&event.code!=='KeyR')return;
   event.preventDefault();
-  if(event.repeat&&!storyAction.hidden)return;
+  if(event.repeat&&(isAttackOrJump||!storyAction.hidden))return;
   press(event.code);
 });
 window.addEventListener('keyup',event=>held.delete(event.code));
@@ -1570,6 +1583,10 @@ document.addEventListener('visibilitychange',()=>{
 for(const button of touch.querySelectorAll('[data-key]')){
   button.addEventListener('pointerdown',event=>{
     event.preventDefault();
+    if(!missionBubble.hidden){
+      press(button.dataset.key);
+      return;
+    }
     button.setPointerCapture(event.pointerId);
     button.dataset.held='true';
     press(button.dataset.key);
