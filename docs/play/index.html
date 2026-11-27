@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; script-src https://static.cloudflareinsights.com 'sha256-3rMkzE8C8BTxvQmUJNvqf8/F/XtDKhXpLnIWjVRqf9U='; style-src 'sha256-S4hO7a514xjDKgsR90e23HqFEelGnBQpAtBUuHyrKIE='; img-src 'self' data:; connect-src https://cloudflareinsights.com">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; script-src https://static.cloudflareinsights.com 'sha256-3rMkzE8C8BTxvQmUJNvqf8/F/XtDKhXpLnIWjVRqf9U='; style-src 'sha256-9uAV9m1p/XDZnNRKnMggxugpgvr90KXmroB9dDKjZr4='; img-src 'self' data:; connect-src https://cloudflareinsights.com">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#17172b">
 <link rel="icon" href="../favicon.ico" sizes="16x16 32x32 48x48" type="image/x-icon">
@@ -47,6 +47,9 @@
   header { border-bottom: 1px solid var(--border); }
   header .wrap { min-height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
   header strong { font-size: 1.0625rem; }
+  footer { border-top: 1px solid var(--border); color: var(--muted); font-size: .875rem; }
+  footer ul { display: flex; flex-wrap: wrap; gap: 0 20px; margin: 0; padding: 8px 0; list-style: none; }
+  footer a { display: inline-flex; align-items: center; min-height: 44px; color: var(--muted); }
   header a { color: var(--muted); font-size: .875rem; }
   main { padding-block: clamp(16px, 3vw, 32px) 32px; }
   .title { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 20px; margin-bottom: 16px; }
@@ -270,10 +273,10 @@
   .select-back .pixel-text { width: 46px; }
   .screen-reader-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   body { transition: background-color .3s ease-out; }
-  :is(header, .title, .deck, .status, .controls) { transition: opacity .3s ease-out; }
+  :is(header, .title, .deck, .status, .controls, footer) { transition: opacity .3s ease-out; }
   body[data-dim] { background: #0d0c19; transition-duration: .9s; }
-  body[data-dim] :is(header, .title, .deck, .status, .controls) { opacity: .22; transition-duration: .9s; }
-  body[data-dim] :is(header, .deck, .controls):is(:hover, :focus-within) { opacity: 1; transition-duration: .2s; }
+  body[data-dim] :is(header, .title, .deck, .status, .controls, footer) { opacity: .22; transition-duration: .9s; }
+  body[data-dim] :is(header, .deck, .controls, footer):is(:hover, :focus-within) { opacity: 1; transition-duration: .2s; }
   .story-result button:focus-visible, .story-result:focus-visible { outline: none; }
   .story-result-actions { display: flex; justify-content: center; gap: 10px; }
   .story-result-actions button { min-width: 96px; color: #e1d4e7; --edge: #746583; }
@@ -282,7 +285,7 @@
   @keyframes breathe { 0%,100% { transform: scale(1,1); } 50% { transform: scale(.985,1.025); } }
   @media(prefers-reduced-motion:reduce){
     .character-option .portrait {animation:none}
-    body, :is(header, .title, .deck, .status, .controls) { transition: none !important; }
+    body, :is(header, .title, .deck, .status, .controls, footer) { transition: none !important; }
   }
 }
 </style>
@@ -376,6 +379,7 @@
     <div><dt>Restart</dt><dd><kbd>R</kbd> · current stage</dd></div>
   </dl>
 </main>
+<footer><div class="wrap"><ul class="footer-links" aria-label="Contact and support"><li><a href="https://egarcade.co.uk/">egarcade.co.uk</a></li><li><a href="mailto:hello@egarcade.co.uk">hello@egarcade.co.uk</a></li><li><a href="https://www.buymeacoffee.com/martindesc" target="_blank" rel="noopener">Buy me a coffee</a></li></ul></div></footer>
 <script>
 const screen = document.querySelector('#screen');
 const ctx = screen.getContext('2d');

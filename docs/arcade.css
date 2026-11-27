@@ -102,8 +102,18 @@ figcaption { margin-top: 8px; color: var(--muted); font-size: .9rem; }
 .controls dt { font-weight: bold; margin-bottom: 4px; }
 .controls dd { margin: 0; color: var(--muted); }
 footer { border-top: 1px solid var(--line); color: var(--muted); }
-footer .wrap { padding-block: 12px; }
+footer .wrap { padding-block: 20px; }
+footer strong { color: var(--text); }
+.footer-copy { display: grid; gap: 6px; }
+.footer-links { display: flex; flex-wrap: wrap; gap: 0 20px; margin: 0; padding: 0; list-style: none; }
+.footer-links a { display: inline-flex; align-items: center; min-height: 44px; }
+.footer-support { display: flex; align-items: center; gap: 20px; }
+.bmc-button { display: block; border-radius: 8px; }
+.bmc-button img { width: 145px; height: 40px; }
+.footer-qr { display: none; padding: 6px; background: #fff; border-radius: 6px; }
+.footer-qr img { width: 96px; height: 96px; }
 @media (min-width: 760px) {
   .split { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
   .gallery, .controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .footer-qr { display: block; }
 }
