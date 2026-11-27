@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; script-src 'sha256-H3+AnylPtu1+l8ZQ+GFFsbfHGI4hsRrK8awWFbNJuC4='; style-src 'sha256-ADguAMqVH1t6F8irMF0UWIk+thAP8n8ctGKBM8G64no='; img-src 'self' data:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; script-src 'sha256-xDzm+9ex0A2nha8+k3N9dsX0NSqu4j5axEaLr/VxosI='; style-src 'sha256-ADguAMqVH1t6F8irMF0UWIk+thAP8n8ctGKBM8G64no='; img-src 'self' data:">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#17172b">
 <link rel="icon" href="../favicon.ico" sizes="16x16 32x32 48x48" type="image/x-icon">
@@ -409,7 +409,7 @@ const divaBallDropTime=2.68;
 const divaBallImpactTime=3.17;
 const divaBallSettleTime=4.03;
 const revealCurtainTime=2.6;
-const revealBpm=116;
+const revealBpm=120;
 const fuseBoxApproach=365;
 const shopperSeatOffset=7;
 const riseDuration = .9;
@@ -1121,6 +1121,7 @@ let musicGain;
 let fxGain;
 let noiseBuffer;
 let musicBus;
+let musicSend;
 let musicTrack;
 let musicStep=0;
 let nextMusicNote=0;
@@ -1216,6 +1217,37 @@ function bandpass(source,at,duration,pitch,endPitch,resonance){
   filter.Q.value=resonance;
   source.connect(filter);
   return filter;
+}
+function synth(bus,at,duration,pitch,level,voice,cutoff,endCutoff=cutoff,detune=0,attack=.006,slide=pitch){
+  const osc=audio.createOscillator();
+  osc.type=voice;
+  osc.frequency.setValueAtTime(pitch,at);
+  if(slide!==pitch)osc.frequency.exponentialRampToValueAtTime(slide,at+duration*.8);
+  osc.detune.value=detune;
+  const filter=audio.createBiquadFilter();
+  filter.type='lowpass';
+  filter.frequency.setValueAtTime(cutoff,at);
+  filter.frequency.exponentialRampToValueAtTime(endCutoff,at+duration);
+  filter.Q.value=1.1;
+  osc.connect(filter);
+  soundEnvelope(osc,bus,at,duration,level,filter,attack);
+}
+function kickDrum(bus,at,level){
+  const osc=audio.createOscillator();
+  osc.type='sine';
+  osc.frequency.setValueAtTime(160,at);
+  osc.frequency.exponentialRampToValueAtTime(47,at+.085);
+  soundEnvelope(osc,bus,at,.34,level,osc,.002);
+  rustle(bus,at,.02,3200,level*.22,1800,.001);
+}
+function hiHat(bus,at,duration,level){
+  const source=audio.createBufferSource();
+  source.buffer=noiseBuffer;
+  const filter=audio.createBiquadFilter();
+  filter.type='highpass';
+  filter.frequency.value=7600;
+  source.connect(filter);
+  soundEnvelope(source,bus,at,duration,level,filter,.002);
 }
 
 const soundCues={
@@ -1324,16 +1356,34 @@ function setMusicTrack(track){
     return;
   }
   if(musicBus){
-    const old=musicBus;
+    const old=musicBus,send=musicSend;
     old.gain.setTargetAtTime(0,audio.currentTime,.035);
-    setTimeout(()=>old.disconnect(),190);
+    setTimeout(()=>{old.disconnect();send?.nodes.forEach(node=>node.disconnect());},190);
   }
   musicBus=null;
+  musicSend=null;
   musicTrack=track;
   if(!track)return;
   musicBus=audio.createGain();
-  musicBus.gain.value=track==='disco'?1.9:1;
+  musicBus.gain.value=track==='disco'?1.2:1;
   musicBus.connect(musicGain);
+  if(track==='disco'){
+    // A dotted-eighth echo gives the lead and strings some dance-floor space.
+    const input=audio.createGain(),echo=audio.createDelay(1),feedback=audio.createGain(),wet=audio.createGain(),tone=audio.createBiquadFilter();
+    echo.delayTime.value=45/revealBpm;
+    feedback.gain.value=.32;
+    wet.gain.value=.34;
+    tone.type='lowpass';
+    tone.frequency.value=2600;
+    input.connect(musicBus);
+    input.connect(echo);
+    echo.connect(tone);
+    tone.connect(feedback);
+    feedback.connect(echo);
+    tone.connect(wet);
+    wet.connect(musicBus);
+    musicSend={input,nodes:[input,echo,feedback,wet,tone]};
+  }
   musicStep=0;
   nextMusicNote=audio.currentTime+.035;
 }
@@ -1351,34 +1401,56 @@ function updateMusic(){
   setMusicTrack(track);
   if(!musicBus)return;
   const bpm={nutcrackerFight:200,shopperFight:138,discoFight:122,disco:revealBpm,fight:112};
-  const interval=30/(bpm[track]??94);
+  const interval=(track==='disco'?15:30)/(bpm[track]??94);
   if(nextMusicNote<audio.currentTime)nextMusicNote=audio.currentTime+.025;
   while(nextMusicNote<audio.currentTime+.14){
     const step=musicStep++,at=nextMusicNote;
     const chord=winterChords[Math.floor(step/8)%winterChords.length];
     const note=(duration,pitch,level,voice,slide,offset=0)=>tone(musicBus,at+offset,duration,pitch,level,voice,slide);
     if(track==='disco'){
-      const beat=step%8;
-      const root=[45,50,43,48][Math.floor(step/8)%4];
-      const riff=[0,12,7,12,0,10,7,12];
+      // Sixteenth-note disco groove: four-on-the-floor kick, offbeat open hats,
+      // octave bass, string stabs and the reveal hook. Eight bars: hook, then strings.
+      const beat=step%16,bar=Math.floor(step/16)%8,chordIndex=bar%4;
+      const root=[45,50,43,48][chordIndex];
+      const voicing=[[57,60,64,67],[57,60,62,65],[55,59,62,65],[55,59,60,64]][chordIndex];
       const hook=[81,0,84,0,88,84,86,0, 81,0,77,0,86,84,81,0,
         79,0,83,0,86,83,84,0, 79,0,76,0,84,83,79,0];
-      if(beat%2===0)note(.18,132,.55,'sine',38);
-      if(beat%4===2){
-        note(.085,187,.21,'triangle',109);
-        rustle(musicBus,at,.14,2120,.26,730);
-      }
-      if(beat%2===1){
-        rustle(musicBus,at,.10,5950,.13,2960);
-        for(const interval of [12,step%32<16?15:16,19,22]){
-          note(.15,hz(root+interval+12),.055,'triangle');
+      const strings=(at,duration,level,pitches=voicing,attack=.012)=>{
+        for(const pitch of pitches){
+          for(const detune of [-9,9])synth(musicSend.input,at,duration,hz(pitch+12),level,'sawtooth',3400,1500,detune,attack);
         }
+      };
+      if(beat%4===0)kickDrum(musicBus,at,.72);
+      if(beat===4||beat===12){
+        for(const offset of [0,.011,.023])rustle(musicBus,at+offset,.03,1450,.46,1150,.001);
+        rustle(musicBus,at+.03,.17,1300,.4,900,.002);
+        tone(musicBus,at,.1,196,.16,'triangle',150);
       }
-      note(.19,hz(root+riff[beat]),.28,'triangle',undefined,.016);
-      const lead=hook[step%hook.length];
-      if(lead){
-        note(.20,hz(lead),.105,'square',undefined,.032);
-        note(.21,hz(lead-12),.086,'triangle',undefined,.032);
+      if(beat%4===2)hiHat(musicBus,at,.26,.42);
+      else hiHat(musicBus,at,.04,beat%2?.15:.21);
+      if(beat%2===0){
+        const high=(beat/2)%2===1;
+        synth(musicBus,at,.13,hz(root-12+(high?12:0)),high?.24:.3,'sawtooth',high?1100:820,260,0,.004);
+        tone(musicBus,at,.12,hz(root-12+(high?12:0)),.18,'sine');
+      }else if(beat===15){
+        synth(musicBus,at,.08,hz(root-2),.2,'sawtooth',900,300,0,.004);
+      }
+      if(beat===10)for(const pitch of voicing)synth(musicBus,at,.07,hz(pitch),.05,'square',2600,1000);
+      if(bar<4){
+        if(beat===6||beat===14)strings(at,.17,.036);
+        if(beat%2===0){
+          const lead=hook[(bar*8+beat/2)%hook.length];
+          if(lead){
+            synth(musicSend.input,at,.22,hz(lead),.16,'square',4800,2200,0,.008);
+            synth(musicSend.input,at,.24,hz(lead-12),.08,'sawtooth',3200,1500,6,.008);
+          }
+        }
+      }else{
+        if(beat===0)strings(at,1.05,.04,voicing,.09);
+        if(beat===6||beat===10||beat===14)strings(at,.17,.038,voicing.map(pitch=>pitch+12));
+        if(bar===7&&beat===8){
+          for(const detune of [-10,10])synth(musicSend.input,at,.95,hz(57),.055,'sawtooth',1200,5200,detune,.7,hz(81));
+        }
       }
     }else if(track==='nutcrackerFight'){
       const beat=step%plumLead.length;
