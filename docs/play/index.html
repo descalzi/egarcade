@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; script-src 'sha256-CeSiMMeCzvOlHkWr2cZpCvax5/rUonqWL5yLg6qzv74='; style-src 'sha256-ADguAMqVH1t6F8irMF0UWIk+thAP8n8ctGKBM8G64no='; img-src 'self' data:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; script-src 'sha256-XuZzD4Za9h5D+p7jjdEJx3wV7Ql/Q57ZTdHfPcNzRTM='; style-src 'sha256-ADguAMqVH1t6F8irMF0UWIk+thAP8n8ctGKBM8G64no='; img-src 'self' data:">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#17172b">
 <link rel="icon" href="../favicon.ico" sizes="16x16 32x32 48x48" type="image/x-icon">
@@ -772,7 +772,8 @@ const sections=[
     waves:[[[280,225,-1],[380,241,-1],[480,207,-1]],['shopper']]},
   {stage:3,place:'Sackville College',art:'college',hint:'The Treetop Frog is just ahead. Clear a path to the lighting switch.',
     layout:{gift:[105,238],red:[261,197],raised:[357,241],pie:[181,205]},
-    waves:[[[287,221,-1,true],[426,242,-1,true]], [[-38,240,1],[516,227,-1]]]},
+    pudding:{x:409,y:219,z:56},
+    waves:[[[287,221,-1,true],[426,242,-1,true]], [[-38,240,1],[516,227,-1]], ['gingerbread','gingerbread']]},
   {stage:3,place:'The Treetop Frog',art:'frog',hint:'The windows are still covered. Get past the Disco Diva to reach the switch.',
     waves:[[[280,220,-1],[402,239,-1]],['disco']]}
 ];
@@ -794,7 +795,13 @@ function firstAnnouncement(s){
 }
 function spawnWave(s){
   const wave=sections[s.section].waves[s.wave];
-  s.enemies=wave.map(entry=>{
+  s.enemies=wave.map((entry,index)=>{
+    if(entry==='gingerbread'){
+      const left=index===0;
+      status.textContent='The gingerbread men are on the loose!';
+      return {gingerbread:true,x:left?2:478,y:left?235:205,z:0,face:left?1:-1,hp:6,
+        phase:'approach',time:left?.35:.85,stride:0,sink:0,rise:null};
+    }
     if(typeof entry!=='string')return zombieAt(...entry);
     const design=bosses[entry];
     status.textContent=design.hint?design.name+' · '+design.hint:design.name;
@@ -813,6 +820,7 @@ function newEncounter(look,section=0,hearts=5,score=0,entryScore=score){
       {x:raisedX,y:raisedY,height:crateHeight,gold:section===firstSectionOf(area.stage),crate:'gold'}],
     crates:[{id:'red',x:redX,y:redY,intact:true},{id:'gold',x:raisedX,y:raisedY,intact:true}],
     scenery:(area.scenery??[]).map(prop=>({...prop,intact:true})),
+    pudding:area.pudding?{...area.pudding}:null,
     pie:{x:pieX,y:pieY,height:0,taken:false}
   };
   s.solids=s.crates.concat(s.scenery);
@@ -878,6 +886,59 @@ function hurtHero(s,direction){
   syncStoryControls();
   status.textContent='Game over. Restart this stage or exit to the title screen.';
   focusEncounter();
+}
+const gingerbreadTell=.56;
+const gingerbreadDash=.47;
+const gingerbreadRecovery=.85;
+const gingerbreadDefeat=.64;
+function setGingerbreadPhase(z,phase,time){
+  z.previousPose=gingerbreadPose(z);
+  z.blend=0;
+  z.phase=phase;
+  z.time=time;
+}
+function updateGingerbread(s,z,dt){
+  const h=s.hero;
+  z.blend=Math.min(1,(z.blend??1)+dt/.13);
+  z.time=Math.max(0,z.time-dt);
+  if(z.phase==='tell'){
+    if(!z.time){
+      setGingerbreadPhase(z,'dash',gingerbreadDash);
+      playSound('kick');
+    }
+    return;
+  }
+  if(z.phase==='dash'){
+    moveOnPavement(z,s.solids,z.face*195*dt,0,2,478);
+    if(close(h,z,17,10)&&h.z<18){
+      hurtHero(s,z.face);
+      z.time=0;
+    }
+    if(!z.time){
+      setGingerbreadPhase(z,'recover',gingerbreadRecovery);
+    }
+    return;
+  }
+  if(z.phase==='recover'){
+    if(!z.time)setGingerbreadPhase(z,'approach',0);
+    return;
+  }
+  const dx=h.x-z.x,dy=h.y-z.y;
+  const otherCharging=s.enemies.some(other=>other!==z&&other.hp>0&&
+    (other.phase==='tell'||other.phase==='dash'));
+  if(!z.time&&!otherCharging&&Math.abs(dx)<102&&Math.abs(dy)<9){
+    z.face=dx<0?-1:1;
+    setGingerbreadPhase(z,'tell',gingerbreadTell);
+    playSound('gingerReady');
+  }else if(Math.abs(dx)>37||Math.abs(dy)>5){
+    if(Math.abs(dx)>6)z.face=Math.sign(dx);
+    const x=z.x,y=z.y;
+    moveOnPavement(z,[],Math.abs(dx)>37?clamp(dx,-63*dt,63*dt):0,clamp(dy,-48*dt,48*dt),2,478);
+    if(x!==z.x||y!==z.y)z.stride+=dt;
+    else z.stride=0;
+  }else{
+    z.stride=0;
+  }
 }
 function updateBoss(s,z,dt){
   const h=s.hero;
@@ -1340,6 +1401,8 @@ const soundCues={
     n(.165,.19,hz(84),.10,'sine');
   },
   horn(n){[65,69,72,77].forEach((m,i)=>{n(i*.105,i===3?.34:.13,hz(m),.17,'triangle');n(i*.105,.085,hz(m+12),.05,'square');});},
+  gingerReady(n){n(0,.11,hz(67),.15,'square');n(.12,.14,hz(74),.13,'triangle');},
+  pudding(ring,r){r(0,.10,1550,.28,460);ring(.06,.11,hz(79),.18,'triangle');},
   switch(n,r){n(0,.05,330,.14,'triangle',150);r(0,.038,1700,.25,850);}
 };
 function playSound(kind){
@@ -1392,7 +1455,7 @@ function setMusicTrack(track){
   musicTrack=track;
   if(!track)return;
   musicBus=audio.createGain();
-  musicBus.gain.value={disco:1.06,shopperFight:.6,discoFight:.62}[track]??1;
+  musicBus.gain.value={disco:1.06,shopperFight:.6,discoFight:.62,gingerbreadFight:.72}[track]??1;
   musicBus.connect(musicGain);
   if(track==='disco'){
     // A dotted-eighth echo gives the lead and strings some dance-floor space.
@@ -1422,12 +1485,13 @@ function updateMusic(){
     if(state?.phase==='reveal'||state?.phase==='complete')track='disco';
     else if(state?.victoryPause>0)track=undefined;
     else if(boss&&!state.cleared)track=boss.hp>0?boss.boss+'Fight':undefined;
+    else if(state?.phase==='fight'&&!state.cleared&&state.enemies.some(enemy=>enemy.gingerbread&&enemy.hp>0))track='gingerbreadFight';
     else if(state?.phase==='fight'&&!state.cleared&&missionBubble.hidden&&state.enemies.some(enemy=>enemy.hp>0&&enemy.rise!==-1))track='fight';
     else if(state?.phase==='fight'||state?.phase==='fuse'||state?.phase==='switch'||!characterSelect.hidden)track='winter';
   }
   setMusicTrack(track);
   if(!musicBus)return;
-  const bpm={nutcrackerFight:200,shopperFight:138,discoFight:122,disco:revealBpm,fight:112};
+  const bpm={nutcrackerFight:200,shopperFight:138,discoFight:122,gingerbreadFight:156,disco:revealBpm,fight:112};
   const interval=(track==='disco'?15:30)/(bpm[track]??94);
   if(nextMusicNote<audio.currentTime)nextMusicNote=audio.currentTime+.025;
   while(nextMusicNote<audio.currentTime+.14){
@@ -1494,6 +1558,21 @@ function updateMusic(){
       }
       if(beat%8===4)rustle(musicBus,at,.08,580,.09,240);
       if(beat%2===1)hiHat(musicBus,at,.03,.035);
+    }else if(track==='gingerbreadFight'){
+      const beat=step%8,bar=Math.floor(step/8)%4;
+      const root=[50,48,46,45][bar];
+      const lead=[
+        74,77,81,0,77,81,84,81, 72,76,79,0,76,79,82,79,
+        70,74,77,0,74,77,81,77, 69,73,76,79,76,73,0,73
+      ][step%32];
+      if(lead){
+        note(.12,hz(lead),.16,'square');
+        note(.15,hz(lead+12),.07,'sine');
+      }
+      if(beat%2===0)note(.15,hz(root+(beat%4?7:0)),.24,'triangle');
+      if(beat%4===0)kickDrum(musicBus,at,.48);
+      if(beat%4===2)rustle(musicBus,at,.07,2100,.19,1150);
+      if(beat%2===1)hiHat(musicBus,at,.055,.12);
     }else if(track==='shopperFight'){
       const beat=step%16;
       const root=[43,41,46,38][Math.floor(step/16)%4];
@@ -1833,7 +1912,18 @@ function propInKickReach(h,prop,reach){
   return prop.intact&&h.z<(prop.height??crateHeight)+5&&close(h,prop,reach,15)&&
     (Math.abs(offset)<=8||offset*h.face>0);
 }
-const hornDropTime=.42;
+const rewardDropTime=.42;
+const puddingBreakTime=.52;
+function kickPudding(s,reach){
+  const p=s.pudding,h=s.hero;
+  if(!p||p.broken||h.z<18||Math.abs(h.z+28-p.z)>11||
+    !close(h,p,reach,12)||(p.x-h.x)*h.face<-4)return;
+  p.broken=true;
+  p.breakAge=0;
+  playSound('pudding');
+  s.gifts.push({kind:'sixpence',points:750,x:p.x-15*h.face,y:p.y+9,height:0,
+    fromX:p.x,fromY:p.y-p.z,drop:rewardDropTime});
+}
 function kickScenery(s,prop){
   const h=s.hero;
   effect(s,'hit',prop.x-h.face*9,prop.y-33);
@@ -1841,7 +1931,7 @@ function kickScenery(s,prop){
   if(!prop.hits||--prop.hits)return;
   const side=h.x<prop.x?-1:1;
   s.gifts.push({kind:'horn',points:prop.reward,x:prop.x+side*31,y:prop.y+16,height:0,
-    fromX:prop.x,fromY:prop.y-54,drop:hornDropTime});
+    fromX:prop.x,fromY:prop.y-54,drop:rewardDropTime});
 }
 function strike(s,attackPose) {
   const h=s.hero;
@@ -1850,6 +1940,7 @@ function strike(s,attackPose) {
   const reach=air?39:punch?30:groundKickReach;
   const damage=air?3:punch?1:2;
   const inArc=target=>close(h,target,reach,13)&&(target.x-h.x)*h.face>=-4;
+  if(air)kickPudding(s,reach);
   if(!punch){
     for(const c of s.crates){
       if(!crateInKickReach(h,c,reach))continue;
@@ -1868,6 +1959,7 @@ function strike(s,attackPose) {
   for(const zombie of s.enemies){
     if(zombie.hp<=0||zombie.rise!==null||!inArc(zombie)||h.z>43)continue;
     if(zombie.boss&&zombie.phase!=='recover')continue;
+    if(zombie.gingerbread&&zombie.phase==='dash'&&!air)continue;
     if(sceneryBetween(h,zombie,s.scenery))continue;
     landed=true;
     effect(s,'hit',zombie.x,zombie.y-33);
@@ -1876,10 +1968,14 @@ function strike(s,attackPose) {
     zombie.tell=0;
     zombie.shove=0;
     if(!zombie.boss)moveOnPavement(zombie,s.scenery,(air?17:7)*h.face,0,18,462);
+    if(zombie.gingerbread){
+      setGingerbreadPhase(zombie,'recover',
+        Math.max(zombie.phase==='recover'?zombie.time:0,air?gingerbreadRecovery:.32));
+    }
     if(zombie.hp<=0){
       const design=bosses[zombie.boss];
-      zombie.sink=design?.defeat??sinkDuration;
-      const points=zombie.boss?500:50;
+      zombie.sink=design?.defeat??(zombie.gingerbread?gingerbreadDefeat:sinkDuration);
+      const points=zombie.boss?500:zombie.gingerbread?200:50;
       s.score+=points;
       if(design){
         setMusicTrack(undefined);
@@ -1913,6 +2009,7 @@ function update(dt) {
   if(s.cleared&&s.phase==='fight')s.time+=dt;
   s.victoryPause=Math.max(0,s.victoryPause-dt);
   const h=s.hero;
+  if(s.pudding?.broken)s.pudding.breakAge+=dt;
   for(const spark of s.effects)spark.age+=dt;
   s.effects=s.effects.filter(spark=>spark.age<spark.duration);
   h.immune=Math.max(0,h.immune-dt);
@@ -1996,6 +2093,11 @@ function update(dt) {
       if(s.phase==='gameOver')return;
       continue;
     }
+    if(z.gingerbread){
+      updateGingerbread(s,z,dt);
+      if(s.phase==='gameOver')return;
+      continue;
+    }
     if(z.rise!==null){
       if(z.rise<0){
         if(Math.abs(z.x-h.x)<=wakeDistance){
@@ -2051,9 +2153,10 @@ function update(dt) {
     if(!item.taken&&close(h,item,12,9)&&h.z>=item.height&&h.z<item.height+15){
       takePickup(h,item,'gift');
       const points=item.points??(item.gold?300:100);
-      if(item.kind==='horn')status.textContent='Golden Post Horn found!';
-      playSound(item.kind==='horn'?'horn':item.gold?'gold':'gift');
-      s.effects.push({kind:item.kind==='horn'?'horn':item.gold?'gold':'gift',
+      const rewardName=streetRewardNames[item.kind];
+      if(rewardName)status.textContent=rewardName+' found!';
+      playSound(item.kind==='horn'?'horn':item.gold||rewardName?'gold':'gift');
+      s.effects.push({kind:item.kind??(item.gold?'gold':'gift'),
         points,x:item.x,y:item.y-item.height,age:0,duration:.58});
       s.score+=points;
     }
@@ -2123,13 +2226,168 @@ function drawPostBox(g){
   g.drawImage(extendedStreet,0,0,400,225,0,0,480,270);
   g.restore();
 }
-function drawPostHorn(g,item){
-  const progress=1-item.drop/hornDropTime;
+function drawStreetReward(g,item){
+  const progress=1-item.drop/rewardDropTime;
   const x=item.fromX+(item.x-item.fromX)*progress;
-  const y=item.fromY+(item.y-item.fromY)*progress-20*Math.sin(Math.PI*progress);
+  const lift=item.kind==='sixpence'&&reducedMotion.matches?0:20*Math.sin(Math.PI*progress);
+  if(item.kind==='sixpence'){
+    const y=item.fromY+(item.y-13-item.fromY)*progress-lift;
+    if(!item.drop)groundShadow(g,x,item.y,11);
+    drawSixpence(g,x,y,item.drop&&!reducedMotion.matches?Math.abs(Math.cos(progress*Math.PI*4)):1);
+    return;
+  }
+  const y=item.fromY+(item.y-item.fromY)*progress-lift;
   if(!item.drop)groundShadow(g,x,y,10);
   g.drawImage(goldenPostHorn,Math.round(x-goldenPostHorn.width/2),
     Math.round(y-goldenPostHorn.height-3));
+}
+function drawSixpence(g,x,y,turn){
+  g.save();
+  g.translate(Math.round(x),Math.round(y));
+  g.scale(.25+.75*turn,1);
+  shape(g,[[-5,-9],[5,-9],[9,-5],[9,5],[5,9],[-5,9],[-9,5],[-9,-5]],'#4b2630');
+  shape(g,[[-4,-8],[4,-8],[8,-4],[8,4],[4,8],[-4,8],[-8,4],[-8,-4]],'#d28836');
+  shape(g,[[-4,-7],[4,-7],[7,-4],[7,3],[3,6],[-4,6],[-7,3],[-7,-4]],'#fff09c');
+  shape(g,[[-3,-5],[3,-5],[5,-3],[5,3],[3,5],[-3,5],[-5,3],[-5,-3]],'#e7ac41');
+  box(g,-2,-4,4,1,'#824826');
+  box(g,-3,-3,1,6,'#824826');
+  box(g,-2,0,4,1,'#824826');
+  box(g,2,1,1,2,'#824826');
+  box(g,-2,3,4,1,'#824826');
+  g.restore();
+}
+function drawPudding(g,p){
+  const x=p.x,y=p.y-p.z;
+  g.save();
+  g.translate(x,y);
+  // A branch bracket and a ribbon put the prize in the playable foreground.
+  g.lineWidth=4;
+  g.strokeStyle='#382938';
+  g.beginPath();
+  g.moveTo(34,-44);
+  g.lineTo(24,-34);
+  g.lineTo(1,-32);
+  g.stroke();
+  g.lineWidth=1;
+  g.strokeStyle='#ac795a';
+  g.beginPath();
+  g.moveTo(32,-44);
+  g.lineTo(22,-35);
+  g.lineTo(1,-33);
+  g.stroke();
+  box(g,-1,-32,3,p.broken?9:20,'#c7655a');
+  box(g,0,-31,1,p.broken?7:17,'#f49c7f');
+  if(!p.broken){
+    shape(g,[[-11,1],[-10,-6],[-6,-11],[6,-11],[10,-6],[12,1],[8,7],[-7,7]],'#442631');
+    shape(g,[[-9,0],[-8,-5],[-5,-9],[5,-9],[8,-5],[10,0],[7,5],[-7,5]],'#885039');
+    shape(g,[[-9,-4],[-5,-9],[5,-9],[8,-5],[7,-1],[4,-2],[2,1],[-1,-1],[-5,1]],'#ecd4a8');
+    box(g,-2,-11,5,2,'#427d58');
+    box(g,0,-12,2,2,'#d66052');
+    for(const [px,py] of [[-6,3],[1,4],[5,2]])box(g,px,py,2,1,'#bd8055');
+  }else if(p.breakAge<puddingBreakTime){
+    const t=p.breakAge/puddingBreakTime;
+    g.globalAlpha=Math.min(1,3*(1-t));
+    for(let i=0;i<7;i++){
+      const angle=i*Math.PI*2/7;
+      const travel=reducedMotion.matches?5:6+31*t;
+      g.save();
+      g.translate(Math.round(Math.cos(angle)*travel),Math.round(Math.sin(angle)*travel*.67+20*t*t));
+      if(!reducedMotion.matches)g.rotate(angle+t*(i%2?5:-5));
+      shape(g,[[-4,0],[-2,-3],[2,-2],[4,2],[0,3]],i%3?'#aa6340':'#efd9b4');
+      box(g,-2,0,2,1,'#f7bb77');
+      g.restore();
+    }
+  }
+  g.restore();
+}
+
+// Pose values are hip x/y, two hands and two feet. Limbs follow these
+// points through a full stride and ease between the attack silhouettes.
+const gingerbreadIdle=[0,-27,-16,-20,17,-20,-9,0,9,0];
+function gingerbreadPose(z){
+  let target=gingerbreadIdle;
+  if(z.phase==='tell'){
+    const load=1-z.time/gingerbreadTell;
+    target=[-5*load,-27+8*load,-16,-17,11-4*load,-31,-12,0,10,0];
+  }else if(z.phase==='dash'||z.phase==='approach'&&z.stride){
+    const dash=z.phase==='dash';
+    const step=dash?(gingerbreadDash-z.time)*35:z.stride*18;
+    const swing=Math.sin(step),lift=Math.cos(step);
+    const stride=dash?15:8;
+    target=[dash?7:0,-27-Math.abs(lift)*3,-15-swing*6,-19,17+swing*7,dash?-28:-21,
+      -8+swing*stride,-Math.max(0,lift)*8,8-swing*stride,-Math.max(0,-lift)*8];
+  }else if(z.phase==='recover'){
+    const crouch=Math.min(1,z.time*3);
+    target=[2,-27+crouch*8,-15,-19+crouch*9,18,-20+crouch*9,-12,0,13,0];
+  }
+  const t=z.blend??1;
+  if(t===1)return target;
+  const ease=t*t*(3-2*t);
+  return target.map((value,i)=>z.previousPose[i]+(value-z.previousPose[i])*ease);
+}
+function drawGingerbreadLimb(g,x,y,toX,toY,width,front){
+  g.lineCap='round';
+  for(const [colour,thickness] of [['#4c2933',width+3],[front?'#ba7342':'#995233',width]]){
+    g.strokeStyle=colour;
+    g.lineWidth=thickness;
+    g.beginPath();
+    g.moveTo(Math.round(x),Math.round(y));
+    g.lineTo(Math.round(toX),Math.round(toY));
+    g.stroke();
+  }
+  g.strokeStyle='#f5dbaf';
+  g.lineWidth=2;
+  const dx=toX-x,dy=toY-y,length=Math.hypot(dx,dy)||1;
+  g.beginPath();
+  g.moveTo(Math.round(toX-.22*dx-dy/length*3),Math.round(toY-.22*dy+dx/length*3));
+  g.lineTo(Math.round(toX-.22*dx+dy/length*3),Math.round(toY-.22*dy-dx/length*3));
+  g.stroke();
+}
+function drawGingerbread(g,z){
+  groundShadow(g,z.x,z.y,25);
+  g.save();
+  g.translate(Math.round(z.x),Math.round(z.y));
+  g.scale(z.face,1);
+  const [x,y,leftHand,ly,rightHand,ry,leftFoot,lf,rightFoot,rf]=gingerbreadPose(z).map(Math.round);
+  const crumble=z.hp<=0?1-z.sink/gingerbreadDefeat:0;
+  if(crumble<.48){
+    g.globalAlpha=clamp(1-(crumble-.24)/.24,0,1);
+    drawGingerbreadLimb(g,x-4,y+5,leftFoot,lf-4,10,false);
+    drawGingerbreadLimb(g,x-6,y-9,leftHand,ly,9,false);
+    drawGingerbreadLimb(g,x+5,y+5,rightFoot,rf-4,11,true);
+    shape(g,[[x-11,y-12],[x+8,y-12],[x+11,y+4],[x+6,y+11],[x-8,y+11],[x-12,y+4]],'#4c2933');
+    shape(g,[[x-9,y-10],[x+7,y-10],[x+9,y+4],[x+5,y+9],[x-7,y+9],[x-10,y+3]],'#bd7747');
+    drawGingerbreadLimb(g,x+7,y-8,rightHand,ry,10,true);
+    const headX=x+(z.phase==='dash'?5:2),headY=y-20;
+    shape(g,[[headX-9,headY-10],[headX+7,headY-11],[headX+12,headY-6],[headX+12,headY+5],
+      [headX+7,headY+10],[headX-7,headY+10],[headX-12,headY+5],[headX-12,headY-5]],'#4c2933');
+    shape(g,[[headX-8,headY-8],[headX+7,headY-9],[headX+10,headY-5],[headX+10,headY+4],
+      [headX+6,headY+8],[headX-6,headY+8],[headX-10,headY+4],[headX-10,headY-4]],'#ce8952');
+    box(g,headX-6,headY-7,11,2,'#f4d5a3');
+    const fierce=z.phase==='tell'||z.phase==='dash';
+    box(g,headX-4,headY-(fierce?2:3),3,3,'#4c2933');
+    box(g,headX+4,headY-3,3,3,'#4c2933');
+    shape(g,[[headX-2,headY+3],[headX+1,headY+(fierce?2:5)],[headX+5,headY+3],
+      [headX+5,headY+5],[headX-2,headY+6]],'#f7e2b9');
+    shape(g,[[x-7,y-11],[x,y-8],[x+7,y-11],[x+7,y-5],[x,y-7],[x-7,y-5]],'#ad474b');
+    box(g,x-1,y-2,3,3,'#ffda86');
+    box(g,x-1,y+4,3,3,'#5a9a71');
+    if(crumble>.10)shape(g,[[headX-2,headY-8],[headX+1,headY-3],[headX-1,headY+1],
+      [headX+4,headY+7],[headX+1,headY+7],[headX-3,headY+1]],'#623a37');
+  }
+  if(crumble>.13){
+    const t=(crumble-.13)/.87;
+    g.globalAlpha=1-t;
+    for(let i=0;i<12;i++){
+      const spread=reducedMotion.matches?.35:t;
+      const side=i%2?1:-1;
+      const chipX=side*(5+(9+i*2)*spread);
+      const chipY=Math.min(0,-39+(i%4)*9-(i%3)*8*spread+55*spread*spread);
+      box(g,chipX,chipY,3+i%3,2+i%2,i%3?'#c9834f':'#f7d7a5');
+      box(g,chipX,chipY+2,2,1,'#6b3f36');
+    }
+  }
+  g.restore();
 }
 function drawNutcrackerDefeat(g,boss){
   // The atlas follows the action from flail to duck, left to right across each row.
@@ -2585,6 +2843,7 @@ function drawReveal(g,s){
   g.restore();
 }
 
+const streetRewardNames={horn:'Golden Post Horn',sixpence:'Golden Sixpence'};
 function drawReward(g,reward){
   const progress=reward.age/reward.duration;
   const motion=reducedMotion.matches?0:progress;
@@ -2599,7 +2858,8 @@ function drawReward(g,reward){
     box(g,x-2,y,5,1,gold?'#ffda79':'#ffe4aa');
     box(g,x,y-2,1,5,'#fff3ca');
   }
-  const amount=reward.kind==='horn'?'GOLDEN POST HORN +'+reward.points:'+'+reward.points;
+  const name=streetRewardNames[reward.kind];
+  const amount=(name?name.toUpperCase()+' ':'')+'+'+reward.points;
   const y=reward.y-29-motion*15;
   g.textAlign='center';
   label(g,amount,reward.x,y+1,10,'#2b2238');
@@ -2673,6 +2933,7 @@ function drawEncounter(g,s){
     }
   }
   const draws=[];
+  if(s.pudding)draws.push({y:s.pudding.y,draw:()=>drawPudding(g,s.pudding)});
   for(const prop of s.scenery){
     if(prop.kind==='postBox')draws.push({y:prop.y,draw:()=>drawPostBox(g)});
   }
@@ -2682,8 +2943,8 @@ function drawEncounter(g,s){
   if(!s.pie.taken)draws.push({y:s.pie.y,draw:()=>pie(g,s.pie.x,s.pie.y)});
   for(const item of s.gifts){
     if(item.taken)continue;
-    if(item.kind==='horn'){
-      draws.push({y:item.y,draw:()=>drawPostHorn(g,item)});
+    if(streetRewardNames[item.kind]){
+      draws.push({y:item.y,draw:()=>drawStreetReward(g,item)});
     }else draws.push({y:item.y,draw:()=>gift(g,item.x,item.y-item.height,item.gold)});
   }
   for(const ball of s.mirrorBalls)draws.push({y:ball.y,draw:()=>drawMirrorBall(g,ball)});
@@ -2694,6 +2955,7 @@ function drawEncounter(g,s){
     draws.push({y:support?support.y+1:a.y,draw:()=>{
       if(a.pickup?.kind==='pie')drawHealing(g,a);
       if(a.boss)drawBoss(g,a);
+      else if(a.gingerbread)drawGingerbread(g,a);
       else actor(g,a,support?crateHeight:0);
       if(a.tell&&!a.boss)label(g,'!',a.x-2,a.y-64,12,'#ffcf76');
     }});
