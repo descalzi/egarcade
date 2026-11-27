@@ -101,6 +101,12 @@ figcaption { margin-top: 8px; color: var(--muted); font-size: .9rem; }
 .controls { display: grid; gap: 20px 32px; margin: 24px 0 0; }
 .controls dt { font-weight: bold; margin-bottom: 4px; }
 .controls dd { margin: 0; color: var(--muted); }
+.support { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px; }
+.support .story-copy { flex: 1 1 280px; }
+.support h2 { font-size: clamp(1.5rem, 3vw, 2.1rem); }
+.darcy { flex: none; width: 80px; height: 60px; }
+.support-link { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 9px 18px; border: 2px solid var(--amber); border-radius: 6px; color: var(--amber); font-weight: 750; text-decoration: none; touch-action: manipulation; }
+.support-link:hover { background: rgba(255, 208, 138, .12); }
 footer { border-top: 1px solid var(--line); color: var(--muted); }
 footer .wrap { padding-block: 20px; }
 footer strong { color: var(--text); }
