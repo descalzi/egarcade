@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; script-src 'sha256-K7BVNeMCUYEaT45LCQ34520kMW1hX3NmgpLbK1tknUA='; style-src 'sha256-ADguAMqVH1t6F8irMF0UWIk+thAP8n8ctGKBM8G64no='; img-src 'self' data:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; script-src 'sha256-IxUvJBdDaK3n3QJ7/GJbdJcK9f/lXBLDmnFJnA0SfxI=' 'sha256-FH0Db/3S/+Z+m75AQ9IXHIBBBYLrCRiKh/5RN0DhPWo='; style-src 'sha256-S4hO7a514xjDKgsR90e23HqFEelGnBQpAtBUuHyrKIE='; img-src 'self' data:">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#17172b">
 <link rel="icon" href="../favicon.ico" sizes="16x16 32x32 48x48" type="image/x-icon">
@@ -275,6 +275,10 @@
   body[data-dim] :is(header, .title, .deck, .status, .controls) { opacity: .22; transition-duration: .9s; }
   body[data-dim] :is(header, .deck, .controls):is(:hover, :focus-within) { opacity: 1; transition-duration: .2s; }
   .story-result button:focus-visible, .story-result:focus-visible { outline: none; }
+  .story-result-actions { display: flex; justify-content: center; gap: 10px; }
+  .story-result-actions button { min-width: 96px; color: #e1d4e7; --edge: #746583; }
+  .story-result-actions button[data-selected] { color: #ffe0a1; --edge: #ffd08a; }
+  .story-result-actions button[data-selected]::after { background: var(--highlight, #322947); }
   @keyframes breathe { 0%,100% { transform: scale(1,1); } 50% { transform: scale(.985,1.025); } }
   @media(prefers-reduced-motion:reduce){
     .character-option .portrait {animation:none}
@@ -337,7 +341,10 @@
     <section id="story-result" class="story-result" aria-labelledby="result-title" hidden>
       <strong id="result-title">The Big Reveal is saved!</strong>
       <p id="result-score"></p>
-      <button type="button" class="pixel-control">Play again</button>
+      <div class="story-result-actions">
+        <button id="result-replay" type="button" class="pixel-control">Play again</button>
+        <button id="result-exit" type="button" class="pixel-control">Exit</button>
+      </div>
     </section>
     <div id="touch" aria-label="Touch controls" hidden>
       <div id="joystick" role="group" aria-label="Drag the joystick to move">
@@ -612,7 +619,7 @@ function focusEncounter(){
   let target=screen;
   if(!gameOver.hidden)target=gameOverRestart;
   else if(!missionBubble.hidden)target=missionContinue;
-  else if(!storyResult.hidden)target=storyResult.querySelector('button');
+  else if(!storyResult.hidden)target=resultButtons[resultChoice];
   target.focus({preventScroll:true});
 }
 async function enterImmersive(){
@@ -1709,7 +1716,16 @@ function updateFuseAction(s,dt){
   syncStoryControls();
 }
 storyAction.addEventListener('click',useStoryAction);
-storyResult.querySelector('button').addEventListener('click',restartStory);
+const resultButtons=[document.querySelector('#result-replay'),document.querySelector('#result-exit')];
+let resultChoice=0;
+function selectResult(index){
+  resultChoice=index;
+  resultButtons.forEach((button,i)=>button.toggleAttribute('data-selected',i===index));
+  resultButtons[index].focus({preventScroll:true});
+}
+resultButtons[0].addEventListener('click',restartStory);
+resultButtons[1].addEventListener('click',exitStory);
+resultButtons.forEach((button,i)=>button.addEventListener('pointerenter',()=>selectResult(i)));
 
 function updateShow(s,dt){
   s.time+=dt;
@@ -1733,7 +1749,7 @@ function updateShow(s,dt){
     resultScore.textContent=s.score.toLocaleString('en-GB')+' points';
     playButton.textContent='Play again';
     syncStoryControls();
-    storyResult.querySelector('button').focus({preventScroll:true});
+    selectResult(0);
   }
 }
 
@@ -1778,7 +1794,13 @@ window.addEventListener('keydown',event=>{
   if(!storyResult.hidden&&!paused&&(event.code==='Enter'||event.code==='NumpadEnter'||isAttackOrJump)){
     event.preventDefault();
     // A short grace period stops a button mashed during the show from skipping the card.
-    if(!event.repeat&&state.time-state.completedAt>=.6)storyResult.querySelector('button').click();
+    if(!event.repeat&&state.time-state.completedAt>=.6)resultButtons[resultChoice].click();
+    return;
+  }
+  if(!storyResult.hidden&&!paused&&(action==='left'||action==='right'||event.code==='Tab')){
+    event.preventDefault();
+    if(event.code==='Tab')selectResult(1-resultChoice);
+    else selectResult(action==='left'?0:1);
     return;
   }
   if(!missionBubble.hidden&&(event.code==='Tab'||event.key==='Enter'||isAttackOrJump)){
@@ -3169,5 +3191,56 @@ function frame(now){
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
+</script>
+<script>
+// ===== TEST MODE (temporary) =====
+// To remove after testing: delete this whole <script> block and its sha256 entry in the
+// Content-Security-Policy at the top of the page. Nothing else depends on it.
+// Open the game with ?test at the end of the address. Hearts are never lost, and:
+//   E = go straight to the Disco Diva at the Treetop Frog (the last fight)
+//   N = skip to the next street   B = jump to this street's last wave or boss
+//   K = knock out everything on screen
+(()=>{
+  if(!new URLSearchParams(location.search).has('test'))return;
+  hurtHero=function(){};
+  const badge=document.createElement('div');
+  badge.textContent='TEST MODE · E Diva · N next street · B boss · K knock out';
+  Object.assign(badge.style,{position:'fixed',top:'6px',left:'50%',transform:'translateX(-50%)',zIndex:'9999',
+    padding:'3px 8px',background:'#b3123a',color:'#fff',font:'bold 12px monospace',borderRadius:'4px',pointerEvents:'none'});
+  document.body.append(badge);
+  const lastWave=s=>{s.wave=sections[s.section].waves.length-1;spawnWave(s);};
+  window.addEventListener('keydown',event=>{
+    if(event.repeat||event.altKey||event.ctrlKey||event.metaKey||!state||paused||!missionBubble.hidden)return;
+    const s=state;
+    if(event.code==='KeyE'&&s.phase==='fight'){
+      event.preventDefault();event.stopImmediatePropagation();
+      setMusicTrack(undefined);
+      const last=sections.length-1;
+      enterSection(last,5,s.score,s.score);
+      lastWave(state);
+    }else if(event.code==='KeyN'){
+      event.preventDefault();event.stopImmediatePropagation();
+      if(s.section+1>=sections.length){status.textContent='Test mode: this is the last street. Press K to beat the Diva.';return;}
+      setMusicTrack(undefined);
+      const next=s.section+1,changedStage=sections[next].stage!==sections[s.section].stage;
+      enterSection(next,5,s.score,changedStage?s.score:s.entryScore);
+    }else if(event.code==='KeyB'&&s.phase==='fight'&&!s.cleared){
+      event.preventDefault();event.stopImmediatePropagation();
+      lastWave(s);
+    }else if(event.code==='KeyK'&&s.phase==='fight'){
+      event.preventDefault();event.stopImmediatePropagation();
+      for(const z of s.enemies){
+        if(z.hp<=0)continue;
+        const design=bosses[z.boss];
+        z.hp=0;z.rise=null;z.stun=0;
+        z.sink=design?.defeat??sinkDuration;
+        s.score+=z.boss?500:50;
+        if(design){setMusicTrack(undefined);s.mirrorBalls=[];playSound(design.defeatSound);}
+        else playSound('defeat');
+      }
+    }
+  },true);
+})();
+// ===== END TEST MODE =====
 </script>
 </html>
