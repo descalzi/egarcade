@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; script-src https://static.cloudflareinsights.com 'sha256-3rMkzE8C8BTxvQmUJNvqf8/F/XtDKhXpLnIWjVRqf9U='; style-src 'sha256-9uAV9m1p/XDZnNRKnMggxugpgvr90KXmroB9dDKjZr4='; img-src 'self' data:; connect-src https://cloudflareinsights.com">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; script-src https://static.cloudflareinsights.com 'sha256-3rMkzE8C8BTxvQmUJNvqf8/F/XtDKhXpLnIWjVRqf9U='; style-src 'sha256-8RJ7XzNyf8UJS+Yzs6qwzicdjUnw7mm7na7kM+FqNnk='; img-src 'self' data: https://cdn.buymeacoffee.com; connect-src https://cloudflareinsights.com">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#17172b">
 <link rel="icon" href="../favicon.ico" sizes="16x16 32x32 48x48" type="image/x-icon">
@@ -47,9 +47,20 @@
   header { border-bottom: 1px solid var(--border); }
   header .wrap { min-height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
   header strong { font-size: 1.0625rem; }
-  footer { border-top: 1px solid var(--border); color: var(--muted); font-size: .875rem; }
-  footer ul { display: flex; flex-wrap: wrap; gap: 0 20px; margin: 0; padding: 8px 0; list-style: none; }
-  footer a { display: inline-flex; align-items: center; min-height: 44px; color: var(--muted); }
+  footer { border-top: 1px solid var(--border); color: var(--muted); line-height: 1.6; }
+  footer .wrap { min-height: 64px; padding-block: 20px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; }
+  footer strong { color: var(--fg); }
+  footer a { color: inherit; }
+  .footer-copy { display: grid; gap: 6px; }
+  .footer-links { display: flex; flex-wrap: wrap; gap: 0 20px; margin: 0; padding: 0; list-style: none; }
+  .footer-links a { display: inline-flex; align-items: center; min-height: 44px; }
+  .footer-support { display: flex; align-items: center; gap: 20px; }
+  .footer-support img { display: block; }
+  .bmc-button { display: block; border-radius: 8px; }
+  .bmc-button img { width: 145px; height: 40px; }
+  .footer-qr { display: none; padding: 6px; background: #fff; border-radius: 6px; }
+  .footer-qr img { width: 96px; height: 96px; }
+  @media (min-width: 760px) { .footer-qr { display: block; } }
   header a { color: var(--muted); font-size: .875rem; }
   main { padding-block: clamp(16px, 3vw, 32px) 32px; }
   .title { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 20px; margin-bottom: 16px; }
@@ -379,7 +390,14 @@
     <div><dt>Restart</dt><dd><kbd>R</kbd> · current stage</dd></div>
   </dl>
 </main>
-<footer><div class="wrap"><ul class="footer-links" aria-label="Contact and support"><li><a href="https://egarcade.co.uk/">egarcade.co.uk</a></li><li><a href="mailto:hello@egarcade.co.uk">hello@egarcade.co.uk</a></li><li><a href="https://www.buymeacoffee.com/martindesc" target="_blank" rel="noopener">Buy me a coffee</a></li></ul></div></footer>
+<footer><div class="wrap">
+  <div class="footer-copy"><p><strong>East Grinstead Arcade</strong> · Free to play in your browser.</p>
+  <ul class="footer-links" aria-label="Contact and support"><li><a href="https://egarcade.co.uk/">egarcade.co.uk</a></li><li><a href="mailto:hello@egarcade.co.uk">hello@egarcade.co.uk</a></li></ul></div>
+  <div class="footer-support">
+    <a class="bmc-button" href="https://www.buymeacoffee.com/martindesc" target="_blank" rel="noopener"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" width="145" height="40" loading="lazy" alt="Buy Me a Coffee"></a>
+    <a class="footer-qr" href="https://www.buymeacoffee.com/martindesc" target="_blank" rel="noopener"><img src="../media/buy-me-a-coffee-qr.png" width="96" height="96" loading="lazy" alt="QR code for Buy Me a Coffee"></a>
+  </div>
+</div></footer>
 <script>
 const screen = document.querySelector('#screen');
 const ctx = screen.getContext('2d');
