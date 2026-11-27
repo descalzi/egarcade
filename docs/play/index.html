@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; script-src 'sha256-iCt2QxvT0/2wU3xNsAx4Cw/XwVLemlTbrLbeLg+R8cs='; style-src 'sha256-cc22wEVm/WOZSf6GTkQBjxD+Voj9bvVzEXE5SX+hwgM='; img-src 'self' data:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; script-src 'sha256-H3+AnylPtu1+l8ZQ+GFFsbfHGI4hsRrK8awWFbNJuC4='; style-src 'sha256-ADguAMqVH1t6F8irMF0UWIk+thAP8n8ctGKBM8G64no='; img-src 'self' data:">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#17172b">
 <link rel="icon" href="../favicon.ico" sizes="16x16 32x32 48x48" type="image/x-icon">
@@ -269,8 +269,17 @@
   .select-back { margin-top: 16px; min-width: 88px; display: inline-grid; place-items: center; }
   .select-back .pixel-text { width: 46px; }
   .screen-reader-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  body { transition: background-color .3s ease-out; }
+  :is(header, .title, .deck, .status, .controls) { transition: opacity .3s ease-out; }
+  body[data-dim] { background: #0d0c19; transition-duration: .9s; }
+  body[data-dim] :is(header, .title, .deck, .status, .controls) { opacity: .22; transition-duration: .9s; }
+  body[data-dim] :is(header, .deck, .controls):is(:hover, :focus-within) { opacity: 1; transition-duration: .2s; }
+  .story-result button:focus-visible, .story-result:focus-visible { outline: none; }
   @keyframes breathe { 0%,100% { transform: scale(1,1); } 50% { transform: scale(.985,1.025); } }
-  @media(prefers-reduced-motion:reduce){ .character-option .portrait {animation:none} }
+  @media(prefers-reduced-motion:reduce){
+    .character-option .portrait {animation:none}
+    body, :is(header, .title, .deck, .status, .controls) { transition: none !important; }
+  }
 }
 </style>
 </head>
@@ -1333,7 +1342,7 @@ function updateMusic(){
   let track;
   if(!document.hidden){
     const boss=state?.phase==='fight'?state.enemies.find(enemy=>enemy.boss):undefined;
-    if(state?.phase==='reveal')track='disco';
+    if(state?.phase==='reveal'||state?.phase==='complete')track='disco';
     else if(state?.victoryPause>0)track=undefined;
     else if(boss&&!state.cleared)track=boss.hp>0?boss.boss+'Fight':undefined;
     else if(state?.phase==='fight'&&!state.cleared&&missionBubble.hidden&&state.enemies.some(enemy=>enemy.hp>0&&enemy.rise!==-1))track='fight';
@@ -1474,6 +1483,7 @@ function updateShow(s,dt){
   }
   if(s.phase==='reveal'&&s.time>=11){
     s.phase='complete';
+    s.completedAt=s.time;
     status.dataset.clear='true';
     status.textContent='The Big Reveal is back on.';
     resultScore.textContent=s.score.toLocaleString('en-GB')+' points';
@@ -1521,6 +1531,12 @@ window.addEventListener('keydown',event=>{
   }
   const action=controls.get(event.code);
   const isAttackOrJump=action==='attack'||action==='jump';
+  if(!storyResult.hidden&&!paused&&(event.code==='Enter'||event.code==='NumpadEnter'||isAttackOrJump)){
+    event.preventDefault();
+    // A short grace period stops a button mashed during the show from skipping the card.
+    if(!event.repeat&&state.time-state.completedAt>=.6)storyResult.querySelector('button').click();
+    return;
+  }
   if(!missionBubble.hidden&&(event.code==='Tab'||event.key==='Enter'||isAttackOrJump)){
     event.preventDefault();
     if(event.code==='Tab')missionContinue.focus();
@@ -1758,7 +1774,12 @@ function update(dt) {
     return;
   }
   const s=state;
-  if(s.phase==='complete'||s.phase==='gameOver')return;
+  if(s.phase==='gameOver')return;
+  if(s.phase==='complete'){
+    // The dancers and the disco carry on behind the result card.
+    s.time+=dt;
+    return;
+  }
   if(s.phase==='countdown'||s.phase==='reveal'){
     updateShow(s,dt);
     return;
@@ -2483,7 +2504,7 @@ function drawEncounter(g,s){
     drawFuseBox(g,s.phase,clock);
     drawReveal(g,s);
     hud(g,s.hero,s.score);
-    if(paused&&s.phase==='reveal'){
+    if(paused&&s.phase!=='complete'){
       box(g,183,117,114,31,'#22243d');
       label(g,'Paused',216,137,13,'#fff1dd');
     }
@@ -2572,6 +2593,16 @@ function drawEncounter(g,s){
     label(g,'Paused',216,137,13,'#fff1dd');
   }
 }
+// Dim the page around the cabinet while a stage is being played, and bring it
+// back on pause, game over, the final result card and the character screen.
+let pageDimmed=false;
+function syncPageDim(){
+  const playing=!!state&&!paused&&!cabinet.hidden&&!cabinet.hasAttribute('data-immersive')
+    &&state.phase!=='complete'&&state.phase!=='gameOver';
+  if(playing===pageDimmed)return;
+  pageDimmed=playing;
+  document.body.toggleAttribute('data-dim',playing);
+}
 function frame(now){
   const dt=lastFrame===undefined?0:Math.min(.035,(now-lastFrame)/1000);
   lastFrame=now;
@@ -2580,6 +2611,7 @@ function frame(now){
   updateMusic();
   pressed.clear();
   if(state&&ready&&missionBubble.hidden)drawEncounter(ctx,state);
+  syncPageDim();
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
