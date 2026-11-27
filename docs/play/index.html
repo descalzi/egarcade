@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; script-src 'sha256-IxUvJBdDaK3n3QJ7/GJbdJcK9f/lXBLDmnFJnA0SfxI='; style-src 'sha256-S4hO7a514xjDKgsR90e23HqFEelGnBQpAtBUuHyrKIE='; img-src 'self' data:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; script-src https://static.cloudflareinsights.com 'sha256-3rMkzE8C8BTxvQmUJNvqf8/F/XtDKhXpLnIWjVRqf9U='; style-src 'sha256-S4hO7a514xjDKgsR90e23HqFEelGnBQpAtBUuHyrKIE='; img-src 'self' data:; connect-src https://cloudflareinsights.com">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#17172b">
 <link rel="icon" href="../favicon.ico" sizes="16x16 32x32 48x48" type="image/x-icon">
@@ -286,6 +286,8 @@
   }
 }
 </style>
+<!-- Cloudflare Web Analytics: replace YOUR_CLOUDFLARE_WEB_ANALYTICS_TOKEN with the site token from the Cloudflare dashboard. -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "YOUR_CLOUDFLARE_WEB_ANALYTICS_TOKEN"}'></script>
 </head>
 <body>
 <a class="skip" href="#game">Skip to game</a>
@@ -1118,12 +1120,40 @@ function clearInput(){
   pressed.clear();
   for(const key of touch.querySelectorAll('[data-key]'))delete key.dataset.held;
 }
+// Analytics: Cloudflare Web Analytics counts history.pushState navigations as page views,
+// so each run briefly visits play/started and play/finished, then the address goes back.
+let analyticsRun=0;
+let analyticsFinishedRun=0;
+let analyticsRestore=null;
+function trackPlay(step){
+  if(analyticsRestore){
+    clearTimeout(analyticsRestore.timer);
+    history.replaceState(history.state,'',analyticsRestore.url);
+  }
+  const url=location.pathname+location.search+location.hash;
+  let base=location.pathname.replace(/index\.html$/,'');
+  if(!base.endsWith('/'))base+='/';
+  try{
+    history.pushState(history.state,'',base+step);
+  }catch{
+    analyticsRestore=null;
+    return;
+  }
+  analyticsRestore={url,timer:setTimeout(()=>{
+    history.replaceState(history.state,'',url);
+    analyticsRestore=null;
+  },1500)};
+}
 function choose(next,showBriefing=false){
   clearInput();
   mode=next;
   setMusicTrack(undefined);
   paused=false;
   state=mode==='style'?null:newEncounter(mode);
+  if(state){
+    analyticsRun++;
+    trackPlay('started');
+  }
   screen.setAttribute('aria-label',state?'Playable pavement outside Benchy Cafe.':'The Benchy Cafe and Book Nook at dusk.');
   const briefing=!!state&&showBriefing;
   missionBubble.hidden=!briefing;
@@ -1744,6 +1774,10 @@ function updateShow(s,dt){
   if(s.phase==='reveal'&&s.time>=11){
     s.phase='complete';
     s.completedAt=s.time;
+    if(analyticsFinishedRun!==analyticsRun){
+      analyticsFinishedRun=analyticsRun;
+      trackPlay('finished');
+    }
     status.dataset.clear='true';
     status.textContent='The Big Reveal is back on.';
     resultScore.textContent=s.score.toLocaleString('en-GB')+' points';
