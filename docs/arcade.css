@@ -97,7 +97,7 @@ figcaption { margin-top: 8px; color: var(--muted); font-size: .9rem; }
 .game-intro > p { color: var(--muted); }
 .game-intro .title-row h1 { font-size: clamp(2.75rem, 7vw, 5.4rem); }
 .gallery { display: grid; gap: 24px; margin-top: 24px; }
-.gallery img { image-rendering: pixelated; }
+.gallery img, .gameplay-poster { image-rendering: pixelated; }
 .controls { display: grid; gap: 20px 32px; margin: 24px 0 0; }
 .controls dt { font-weight: bold; margin-bottom: 4px; }
 .controls dd { margin: 0; color: var(--muted); }
